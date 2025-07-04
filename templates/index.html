@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block title %}Home - Lazywriter{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-book-open me-2"></i>Your Novels</h1>
+            <a href="{{ url_for('create_novel') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create New Novel
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if novels %}
+    <div class="row">
+        {% for novel in novels %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ novel.title }}</h5>
+                        <p class="card-text text-muted small mb-2">
+                            <i class="fas fa-tag me-1"></i>{{ novel.genre }}
+                        </p>
+                        <p class="card-text">
+                            {% if novel.description %}
+                                {{ novel.description[:100] }}{% if novel.description|length > 100 %}...{% endif %}
+                            {% else %}
+                                <em class="text-muted">No description available</em>
+                            {% endif %}
+                        </p>
+                        <div class="text-muted small mb-3">
+                            <i class="fas fa-calendar me-1"></i>
+                            Created: {% if novel.created_at %}{{ novel.created_at[:10] }}{% else %}Unknown{% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('novel_detail', novel_id=novel.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                                <a href="{{ url_for('edit_novel', novel_id=novel.id) }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </a>
+                            </div>
+                            <form method="POST" action="{{ url_for('delete_novel', novel_id=novel.id) }}" class="d-inline" 
+                                  onsubmit="return confirm('Are you sure you want to delete this novel and all its related data?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-book-open fa-4x text-muted mb-4"></i>
+                <h3 class="text-muted">No novels yet</h3>
+                <p class="text-muted mb-4">Start your worldbuilding journey by creating your first novel!</p>
+                <a href="{{ url_for('create_novel') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>Create Your First Novel
+                </a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-lightbulb me-2"></i>Quick Start Guide</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-book fa-2x text-primary mb-2"></i>
+                            <h6>1. Create a Novel</h6>
+                            <p class="small text-muted">Start with your story's basic concept</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-users fa-2x text-success mb-2"></i>
+                            <h6>2. Add Characters</h6>
+                            <p class="small text-muted">Develop your story's protagonists and antagonists</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-map-marker-alt fa-2x text-warning mb-2"></i>
+                            <h6>3. Build Locations</h6>
+                            <p class="small text-muted">Create the world where your story takes place</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-scroll fa-2x text-info mb-2"></i>
+                            <h6>4. Establish Lore</h6>
+                            <p class="small text-muted">Define the rules and history of your world</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,352 @@
+{% extends "layout.html" %}
+
+{% block title %}Search - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item active">Search</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-search me-2"></i>Worldbuilding Search</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - Semantic search across characters, locations, and lore</p>
+            </div>
+            <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Worldbuilding
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" name="q" value="{{ query or '' }}" 
+                                       placeholder="Search for characters, locations, lore, or any worldbuilding content..."
+                                       autofocus>
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search me-1"></i>Search
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select form-select-lg" name="types">
+                                <option value="">All Content</option>
+                                <option value="characters" {% if 'characters' in selected_types %}selected{% endif %}>Characters Only</option>
+                                <option value="locations" {% if 'locations' in selected_types %}selected{% endif %}>Locations Only</option>
+                                <option value="lore" {% if 'lore' in selected_types %}selected{% endif %}>Lore Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results -->
+{% if query %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Search Results</h4>
+                <span class="text-muted">
+                    {% if results %}
+                        {{ results|length }} result{{ 's' if results|length != 1 else '' }} for "{{ query }}"
+                    {% elif categorized_results %}
+                        {% set total_results = (categorized_results.characters|length) + (categorized_results.locations|length) + (categorized_results.lore|length) %}
+                        {{ total_results }} result{{ 's' if total_results != 1 else '' }} for "{{ query }}"
+                    {% else %}
+                        No results found for "{{ query }}"
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {% if results %}
+        <div class="row">
+            {% for result in results %}
+                {% set entity = result.data or result %}
+                {% set entity_type = result.entity_type or 'unknown' %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    {% if entity_type == 'characters' %}
+                                        <i class="fas fa-user me-1"></i>Character
+                                    {% elif entity_type == 'locations' %}
+                                        <i class="fas fa-map-marker-alt me-1"></i>Location
+                                    {% elif entity_type == 'lore' %}
+                                        <i class="fas fa-scroll me-1"></i>Lore
+                                    {% else %}
+                                        <i class="fas fa-file me-1"></i>Content
+                                    {% endif %}
+                                </h6>
+                                {% if result.similarity_score %}
+                                    <span class="badge bg-info">{{ "%.0f"|format((1 - result.similarity_score) * 100) }}% match</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ entity.name or entity.title or 'Unnamed' }}</h5>
+
+                            {% if entity_type == 'characters' and entity.role %}
+                                <div class="mb-2">
+                                    <span class="badge bg-{% if entity.role == 'protagonist' %}primary{% elif entity.role == 'secondary protagonist' %}info{% elif entity.role == 'villain' %}danger{% elif entity.role == 'antagonist' %}warning{% else %}secondary{% endif %}">
+                                        {{ entity.role.title() }}
+                                    </span>
+                                </div>
+                            {% endif %}
+
+                            {% if entity.occupation %}
+                                <h6 class="card-subtitle mb-2 text-muted">{{ entity.occupation }}</h6>
+                            {% endif %}
+
+                            {% set description = entity.description or entity.summary or '' %}
+                            {% if description %}
+                                <p class="card-text">{{ description[:150] }}{% if description|length > 150 %}...{% endif %}</p>
+                            {% else %}
+                                <p class="card-text text-muted">No description available.</p>
+                            {% endif %}
+
+                            {% if entity.tags %}
+                                <div class="mb-2">
+                                    {% for tag in entity.tags[:3] %}
+                                        <span class="badge bg-warning text-dark me-1">{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            {% if entity_type == 'characters' %}
+                                <a href="{{ url_for('novel_character_detail', novel_id=novel.id, character_id=result.entity_id or entity.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View Character
+                                </a>
+                            {% elif entity_type == 'locations' %}
+                                <a href="{{ url_for('novel_location_detail', novel_id=novel.id, location_id=result.entity_id or entity.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View Location
+                                </a>
+                            {% elif entity_type == 'lore' %}
+                                <a href="{{ url_for('novel_lore_detail', novel_id=novel.id, lore_id=result.entity_id or entity.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View Lore
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% elif categorized_results %}
+        <!-- Categorized Results -->
+        {% for category, category_results in categorized_results.items() %}
+            {% if category_results %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="mb-3">
+                            {% if category == 'characters' %}
+                                <i class="fas fa-users me-2"></i>Characters ({{ category_results|length }})
+                            {% elif category == 'locations' %}
+                                <i class="fas fa-map-marker-alt me-2"></i>Locations ({{ category_results|length }})
+                            {% elif category == 'lore' %}
+                                <i class="fas fa-scroll me-2"></i>Lore ({{ category_results|length }})
+                            {% else %}
+                                <i class="fas fa-file me-2"></i>{{ category.title() }} ({{ category_results|length }})
+                            {% endif %}
+                        </h5>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    {% for result in category_results %}
+                        {% set entity = result.data or result %}
+                        {% set entity_type = result.entity_type or category %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">
+                                            {% if entity_type == 'characters' %}
+                                                <i class="fas fa-user me-1"></i>Character
+                                            {% elif entity_type == 'locations' %}
+                                                <i class="fas fa-map-marker-alt me-1"></i>Location
+                                            {% elif entity_type == 'lore' %}
+                                                <i class="fas fa-scroll me-1"></i>Lore
+                                            {% endif %}
+                                        </h6>
+                                        {% if result.similarity_score %}
+                                            <span class="badge bg-info">{{ "%.0f"|format((1 - result.similarity_score) * 100) }}% match</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ entity.name or entity.title or 'Unnamed' }}</h6>
+
+                                    {% if entity_type == 'characters' and entity.role %}
+                                        <div class="mb-2">
+                                            <span class="badge bg-{% if entity.role == 'protagonist' %}primary{% elif entity.role == 'secondary protagonist' %}info{% elif entity.role == 'villain' %}danger{% elif entity.role == 'antagonist' %}warning{% else %}secondary{% endif %} badge-sm">
+                                                {{ entity.role.title() }}
+                                            </span>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if entity.occupation %}
+                                        <p class="card-subtitle mb-2 text-muted small">{{ entity.occupation }}</p>
+                                    {% endif %}
+
+                                    {% set description = entity.description or entity.summary or '' %}
+                                    {% if description %}
+                                        <p class="card-text small">{{ description[:100] }}{% if description|length > 100 %}...{% endif %}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    {% if entity_type == 'characters' %}
+                                        <a href="{{ url_for('novel_character_detail', novel_id=novel.id, character_id=result.entity_id or entity.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                    {% elif entity_type == 'locations' %}
+                                        <a href="{{ url_for('novel_location_detail', novel_id=novel.id, location_id=result.entity_id or entity.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                    {% elif entity_type == 'lore' %}
+                                        <a href="{{ url_for('novel_lore_detail', novel_id=novel.id, lore_id=result.entity_id or entity.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <!-- No Results -->
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No results found</h4>
+                    <p class="text-muted">Try different keywords or search terms</p>
+                    <div class="mt-4">
+                        <h6>Suggestions:</h6>
+                        <div class="btn-group-vertical">
+                            <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?types=characters" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-users me-1"></i>Browse All Characters
+                            </a>
+                            <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?types=locations" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-map-marker-alt me-1"></i>Browse All Locations
+                            </a>
+                            <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?types=lore" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-scroll me-1"></i>Browse All Lore
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% else %}
+    <!-- Search Tips -->
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <i class="fas fa-lightbulb fa-2x text-warning mb-3"></i>
+                    <h5>Search Tips</h5>
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h6>What you can search for:</h6>
+                            <ul class="list-unstyled text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>Character names and traits</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Location names and features</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Lore topics and events</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Personality descriptions</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Story themes and concepts</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Example searches:</h6>
+                            <ul class="list-unstyled text-start">
+                                <li><i class="fas fa-search text-primary me-2"></i>"brave warrior"</li>
+                                <li><i class="fas fa-search text-primary me-2"></i>"magical forest"</li>
+                                <li><i class="fas fa-search text-primary me-2"></i>"ancient prophecy"</li>
+                                <li><i class="fas fa-search text-primary me-2"></i>"mysterious past"</li>
+                                <li><i class="fas fa-search text-primary me-2"></i>"villain with good intentions"</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Browse Content:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-users me-2"></i>All Characters
+                            </a>
+                            <a href="{{ url_for('novel_worldbuilding_locations', novel_id=novel.id) }}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-map-marker-alt me-2"></i>All Locations
+                            </a>
+                            <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-scroll me-2"></i>All Lore
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Create New:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_create_character', novel_id=novel.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-user-plus me-2"></i>Add Character
+                            </a>
+                            <a href="{{ url_for('novel_create_location', novel_id=novel.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-map-pin me-2"></i>Add Location
+                            </a>
+                            <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-scroll me-2"></i>Add Lore
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Navigation:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-globe me-2"></i>Worldbuilding Hub
+                            </a>
+                            <a href="{{ url_for('novel_detail', novel_id=novel.id) }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-book me-2"></i>Novel Overview
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

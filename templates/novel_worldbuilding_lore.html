@@ -1,0 +1,180 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ novel.title }} - Lore - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item active">Lore</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-scroll me-2"></i>Lore</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - {{ lore|length }} lore entr{{ 'ies' if lore|length != 1 else 'y' }}</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-warning">
+                    <i class="fas fa-plus me-1"></i>Add Lore Entry
+                </a>
+                <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Worldbuilding
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lore List -->
+{% if lore %}
+    <div class="row">
+        {% for lore_entry in lore %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {{ lore_entry.title }}
+                            {% if lore_entry.category %}
+                                <span class="badge bg-{% if lore_entry.category == 'History' %}primary{% elif lore_entry.category == 'Culture' %}info{% elif lore_entry.category == 'Magic' %}success{% elif lore_entry.category == 'Technology' %}warning{% elif lore_entry.category == 'Geography' %}secondary{% elif lore_entry.category == 'Politics' %}danger{% else %}dark{% endif %} ms-2">
+                                    {{ lore_entry.category }}
+                                </span>
+                            {% endif %}
+                            {% if lore_entry.ai_generated %}
+                                <span class="badge bg-success ms-1" title="AI Generated">
+                                    <i class="fas fa-robot"></i>
+                                </span>
+                            {% endif %}
+                        </h5>
+                        {% if lore_entry.description %}
+                            <p class="card-text">{{ lore_entry.description[:150] }}{% if lore_entry.description|length > 150 %}...{% endif %}</p>
+                        {% endif %}
+                        
+                        {% if lore_entry.significance %}
+                            <p class="small text-muted mb-2"><strong>Significance:</strong> {{ lore_entry.significance[:100] }}{% if lore_entry.significance|length > 100 %}...{% endif %}</p>
+                        {% endif %}
+                        
+                        {% if lore_entry.tags %}
+                            <div class="mb-2">
+                                {% for tag in lore_entry.tags[:3] %}
+                                    <span class="badge bg-warning text-dark me-1">{{ tag }}</span>
+                                {% endfor %}
+                                {% if lore_entry.tags|length > 3 %}
+                                    <span class="badge bg-warning text-dark">+{{ lore_entry.tags|length - 3 }} more</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{{ url_for('novel_lore_detail', novel_id=novel.id, lore_id=lore_entry.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <a href="{{ url_for('novel_edit_lore', novel_id=novel.id, lore_id=lore_entry.id) }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <!-- Empty State -->
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-scroll fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No lore entries yet</h4>
+                <p class="text-muted">Start building your world by creating your first lore entry!</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-plus me-2"></i>Create Your First Lore Entry
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Lore Actions:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-scroll me-2"></i>Add New Lore Entry
+                            </a>
+                            <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?types=lore" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search me-2"></i>Search Lore
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Other Worldbuilding:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-users me-2"></i>Characters
+                            </a>
+                            <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-globe me-2"></i>Worldbuilding Hub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lore Categories Overview -->
+{% if lore %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Lore Categories</h5>
+            </div>
+            <div class="card-body">
+                {% set categories = {} %}
+                {% for lore_entry in lore %}
+                    {% set category = lore_entry.category or 'Other' %}
+                    {% if categories.update({category: categories.get(category, 0) + 1}) %}{% endif %}
+                {% endfor %}
+                
+                <div class="row">
+                    {% for category, count in categories.items() %}
+                        <div class="col-md-3 col-sm-6 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{% if category == 'History' %}primary{% elif category == 'Culture' %}info{% elif category == 'Magic' %}success{% elif category == 'Technology' %}warning{% elif category == 'Geography' %}secondary{% elif category == 'Politics' %}danger{% else %}dark{% endif %} me-2">
+                                    {{ category }}
+                                </span>
+                                <span class="text-muted">{{ count }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Click on category badges in lore entries to filter by category, or use the search function to find specific lore.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

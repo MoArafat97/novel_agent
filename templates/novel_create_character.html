@@ -1,0 +1,219 @@
+{% extends "layout.html" %}
+
+{% block title %}AI Character Creator - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}">Characters</a></li>
+                <li class="breadcrumb-item active">AI Character Creator</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-robot me-2"></i>AI Character Creator</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - Powered by DeepSeek AI</p>
+            </div>
+            <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Characters
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- AI Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        {% if ai_available %}
+            <div class="alert alert-success" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>AI Assistant Ready!</strong> DeepSeek AI will help create a detailed character from your description.
+            </div>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>AI Unavailable:</strong> Basic character creation will be used. Check your OpenRouter API configuration.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Character Creation Form -->
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-magic me-2"></i>Create Your Character
+                    {% if ai_available %}
+                        <span class="badge bg-success ms-2">AI Powered</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="characterForm">
+                    <div class="mb-4">
+                        <label for="name" class="form-label">Character Name *</label>
+                        <input type="text" class="form-control form-control-lg" id="name" name="name" required 
+                               placeholder="e.g., Lyra Shadowmend, Marcus the Bold">
+                        <div class="form-text">What is your character's name?</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="prompt" class="form-label">Character Description *</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="6" required 
+                                  placeholder="Describe your character in detail. Tell me about their personality, background, role, appearance, skills, motivations, or anything else you envision..."></textarea>
+                        <div class="form-text">
+                            {% if ai_available %}
+                                <i class="fas fa-robot me-1"></i>The AI will analyze your description and create detailed character fields automatically.
+                            {% else %}
+                                This will be used as the character's basic description.
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg" id="createBtn">
+                            {% if ai_available %}
+                                <i class="fas fa-magic me-1"></i>Create with AI
+                            {% else %}
+                                <i class="fas fa-plus me-1"></i>Create Character
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Examples and Tips -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    {% if ai_available %}AI Character Creation Tips{% else %}Character Creation Tips{% endif %}
+                </h5>
+                
+                {% if ai_available %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>What the AI Can Do:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Expand basic ideas into rich personalities</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Create detailed backstories and motivations</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Suggest appropriate ages and occupations</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Generate relevant tags for organization</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Ensure consistency with your novel's genre</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Example Prompts:</h6>
+                            <div class="small">
+                                <p><strong>"A gruff blacksmith who secretly practices magic"</strong></p>
+                                <p><strong>"Young noble who rebels against family expectations"</strong></p>
+                                <p><strong>"Wise mentor figure with a mysterious past"</strong></p>
+                                <p><strong>"Cheerful tavern keeper who knows everyone's secrets"</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Include These Details:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-user me-2"></i>Physical appearance</li>
+                                <li><i class="fas fa-heart me-2"></i>Personality traits</li>
+                                <li><i class="fas fa-briefcase me-2"></i>Occupation or role</li>
+                                <li><i class="fas fa-history me-2"></i>Background and history</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Character Elements:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-target me-2"></i>Goals and motivations</li>
+                                <li><i class="fas fa-exclamation me-2"></i>Fears and weaknesses</li>
+                                <li><i class="fas fa-users me-2"></i>Relationships</li>
+                                <li><i class="fas fa-star me-2"></i>Special skills or abilities</li>
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Novel Context -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-book me-2"></i>Novel Context</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Title:</strong> {{ novel.title }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Genre:</strong> {{ novel.genre or 'Not specified' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        {% if ai_available %}
+                            <p class="text-success"><i class="fas fa-robot me-1"></i>AI will consider this context</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if novel.description %}
+                    <p class="mb-0"><strong>Description:</strong> {{ novel.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('characterForm');
+    const createBtn = document.getElementById('createBtn');
+    const originalBtnText = createBtn.innerHTML;
+    
+    form.addEventListener('submit', function() {
+        createBtn.disabled = true;
+        {% if ai_available %}
+            createBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creating with AI...';
+        {% else %}
+            createBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creating...';
+        {% endif %}
+        
+        // Re-enable after 10 seconds as fallback
+        setTimeout(function() {
+            createBtn.disabled = false;
+            createBtn.innerHTML = originalBtnText;
+        }, 10000);
+    });
+    
+    // Auto-resize textarea
+    const textarea = document.getElementById('prompt');
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+});
+</script>
+{% endblock %}

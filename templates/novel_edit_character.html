@@ -1,0 +1,912 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit {{ character.name }} - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}">Characters</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_character_detail', novel_id=novel.id, character_id=character.id) }}">{{ character.name }}</a></li>
+                <li class="breadcrumb-item active">Edit</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-robot me-2"></i>AI Character Editor</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - {{ character.name }}</p>
+            </div>
+            <a href="{{ url_for('novel_character_detail', novel_id=novel.id, character_id=character.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Character
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- AI Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        {% if ai_available %}
+            <div class="alert alert-success" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>AI Editor Ready!</strong> Make changes and watch your character update in real-time.
+            </div>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>AI Unavailable:</strong> Character editing is disabled. Check your OpenRouter API configuration.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Main Editing Interface -->
+<div class="row">
+    <!-- Character Profile (Left Side) -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Character Profile
+                    <span class="badge bg-info ms-2" id="updateStatus" style="display: none;">Updating...</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Character Header -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="character-avatar me-3">
+                                <i class="fas fa-user-circle fa-3x text-muted"></i>
+                            </div>
+                            <div>
+                                <h2 class="mb-1" id="char-name">{{ character.name }}</h2>
+                                <div class="mb-2">
+                                    {% if character.role %}
+                                        <span class="badge bg-{% if character.role == 'protagonist' %}primary{% elif character.role == 'secondary protagonist' %}info{% elif character.role == 'villain' %}danger{% elif character.role == 'antagonist' %}warning{% else %}secondary{% endif %} me-2" id="char-role">
+                                            {{ character.role.title() }}
+                                        </span>
+                                    {% endif %}
+                                    <span class="text-muted" id="char-occupation">{{ character.occupation or 'No occupation specified' }}</span>
+                                </div>
+                                <p class="text-muted mb-0">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    <span id="char-age">{{ character.age or 'Age not specified' }}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Character Details -->
+                <div class="row">
+                    <div class="col-12">
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-2">
+                                <i class="fas fa-align-left me-2"></i>Description
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="char-description">
+                                {{ character.description or 'No description provided.' }}
+                            </div>
+                        </div>
+
+                        <!-- Personality -->
+                        <div class="mb-4">
+                            <h6 class="text-success mb-2">
+                                <i class="fas fa-heart me-2"></i>Personality
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="char-personality">
+                                {{ character.personality or 'No personality details provided.' }}
+                            </div>
+                        </div>
+
+                        <!-- Backstory -->
+                        <div class="mb-4">
+                            <h6 class="text-warning mb-2">
+                                <i class="fas fa-history me-2"></i>Backstory
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="char-backstory">
+                                {{ character.backstory or 'No backstory provided.' }}
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="mb-4">
+                            <h6 class="text-info mb-2">
+                                <i class="fas fa-tags me-2"></i>Tags
+                            </h6>
+                            <div id="char-tags">
+                                {% if character.tags %}
+                                    {% for tag in character.tags %}
+                                        <span class="badge bg-warning text-dark me-1 mb-1">{{ tag }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No tags assigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Controls (Right Side) -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-magic me-2"></i>AI Editor
+                    {% if ai_available %}
+                        <span class="badge bg-success ms-2">Ready</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="editForm">
+                    <!-- Quick Tags Editor -->
+                    <div class="mb-4">
+                        <label for="character_tags" class="form-label">
+                            <i class="fas fa-tags me-1"></i>Quick Edit Tags
+                        </label>
+                        <input type="text" class="form-control" id="character_tags" name="character_tags"
+                               value="{{ character.tags|join(', ') if character.tags else '' }}"
+                               placeholder="warrior, brave, magical, leader">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>Separate tags with commas. Include occupation for better search.
+                        </div>
+                    </div>
+
+                    <!-- AI Edit Request -->
+                    <div class="mb-4">
+                        <label for="edit_request" class="form-label">AI Character Changes</label>
+                        <textarea class="form-control" id="edit_request" name="edit_request" rows="5"
+                                  placeholder="Describe what you want to change...
+
+Examples:
+• Make him more mysterious
+• Change her age to 25
+• Add magical abilities
+• Give him a tragic past
+• Make her the villain instead"></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-robot me-1"></i>AI changes will appear in real-time on the left
+                        </div>
+                    </div>
+
+                    <!-- Speed Mode Toggle -->
+                    {% if ai_available %}
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="fastMode">
+                            <label class="form-check-label" for="fastMode">
+                                <i class="fas fa-bolt me-1"></i>Fast Mode
+                            </label>
+                            <div class="form-text">Skip preview for faster editing</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-success" id="saveTagsBtn">
+                            <i class="fas fa-save me-1"></i>Save Tags Only
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg" id="editBtn" {% if not ai_available %}disabled{% endif %}>
+                            {% if ai_available %}
+                                <i class="fas fa-magic me-1"></i>AI Update Character
+                            {% else %}
+                                <i class="fas fa-ban me-1"></i>AI Unavailable
+                            {% endif %}
+                        </button>
+                        <a href="{{ url_for('novel_character_detail', novel_id=novel.id, character_id=character.id) }}" class="btn btn-outline-success" id="viewResultBtn">
+                            <i class="fas fa-eye me-1"></i>View Final Result
+                        </a>
+                        <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Characters
+                        </a>
+                        <button type="button" class="btn btn-outline-info" id="makeAnotherEditBtn" style="display: none;">
+                            <i class="fas fa-edit me-1"></i>Make Another Edit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Suggestions -->
+{% if ai_available %}
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>AI Suggestions</h5>
+                <button type="button" class="btn btn-light btn-sm" id="loadSuggestionsBtn">
+                    <i class="fas fa-download me-1"></i>Load Suggestions
+                </button>
+            </div>
+            <div class="card-body" id="suggestionsContainer">
+                <p class="text-muted text-center">
+                    <i class="fas fa-lightbulb fa-2x mb-2 d-block"></i>
+                    Click "Load Suggestions" to get AI improvement ideas for this character.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Examples and Tips -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    {% if ai_available %}AI Character Editing Tips{% else %}Character Editing Tips{% endif %}
+                </h5>
+
+                {% if ai_available %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>What You Can Change:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Personality traits and motivations</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Physical appearance and age</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Backstory and history</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Occupation and skills</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Story role and relationships</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Example Edit Requests:</h6>
+                            <div class="small">
+                                <p><strong>"Make her more mysterious and secretive"</strong></p>
+                                <p><strong>"Add a tragic backstory involving family loss"</strong></p>
+                                <p><strong>"Change his age to 35 and make him a veteran"</strong></p>
+                                <p><strong>"Give her magical abilities and update her role"</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-muted">AI character editing is currently unavailable. Please check your API configuration.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Character Info -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card border-secondary">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Character Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Novel:</strong> {{ novel.title }}</p>
+                        <p><strong>Genre:</strong> {{ novel.genre or 'Not specified' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        {% if character.created_at %}
+                            <p><strong>Created:</strong> {{ character.created_at[:10] }}</p>
+                        {% endif %}
+                        {% if character.updated_at %}
+                            <p><strong>Last Updated:</strong> {{ character.updated_at[:10] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editForm');
+    const editBtn = document.getElementById('editBtn');
+    const saveTagsBtn = document.getElementById('saveTagsBtn');
+    const updateStatus = document.getElementById('updateStatus');
+    const originalBtnText = editBtn.innerHTML;
+
+    // Character field elements for real-time updates
+    const charElements = {
+        name: document.getElementById('char-name'),
+        age: document.getElementById('char-age'),
+        occupation: document.getElementById('char-occupation'),
+        role: document.getElementById('char-role'),
+        description: document.getElementById('char-description'),
+        personality: document.getElementById('char-personality'),
+        backstory: document.getElementById('char-backstory'),
+        tags: document.getElementById('char-tags')
+    };
+
+    // Handle AI editing
+    form.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
+
+        if (editBtn.disabled) return false;
+
+        const editRequest = document.getElementById('edit_request').value.trim();
+        if (!editRequest) {
+            alert('Please describe what you want to change.');
+            return false;
+        }
+
+        // Start the AI editing process
+        startAIEditing(editRequest);
+    });
+
+    // Handle tags-only saving
+    saveTagsBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        saveTagsOnly();
+    });
+
+    function saveTagsOnly() {
+        const tagsInput = document.getElementById('character_tags').value.trim();
+        const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+
+        // Update UI
+        saveTagsBtn.disabled = true;
+        saveTagsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+
+        // Send tags update
+        fetch(window.location.href + '/tags', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tags: tags })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the tags display
+                updateCharacterField('tags', tags);
+                saveTagsBtn.innerHTML = '<i class="fas fa-check me-1"></i>Saved!';
+                saveTagsBtn.className = 'btn btn-success';
+
+                setTimeout(() => {
+                    saveTagsBtn.disabled = false;
+                    saveTagsBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Tags Only';
+                    saveTagsBtn.className = 'btn btn-success';
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Failed to save tags');
+            }
+        })
+        .catch(error => {
+            console.error('Tags save error:', error);
+            alert('Failed to save tags. Please try again.');
+            saveTagsBtn.disabled = false;
+            saveTagsBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Tags Only';
+        });
+    }
+
+    function startAIEditing(editRequest) {
+        // Clear previous highlights before starting new edit
+        clearPreviousHighlights();
+
+        // Immediately disable button and show loading state
+        editBtn.disabled = true;
+        const originalBtnText = editBtn.innerHTML;
+        editBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+
+        // Show status indicator
+        updateStatus.style.display = 'inline-block';
+        updateStatus.className = 'badge bg-primary ms-2';
+
+        // Check if fast mode is enabled
+        const fastMode = document.getElementById('fastMode').checked;
+
+        if (fastMode) {
+            // Fast mode: direct edit without preview
+            performFastEdit(editRequest);
+        } else {
+            // Normal mode: preview then save
+            const currentTags = document.getElementById('character_tags').value.trim();
+            performRealTimeUpdate(editRequest, currentTags);
+        }
+    }
+
+    function performFastEdit(editRequest) {
+        // Update UI to show fast editing mode (button already disabled)
+        editBtn.innerHTML = '<i class="fas fa-bolt fa-spin me-1"></i>Fast editing...';
+        updateStatus.innerHTML = '<i class="fas fa-bolt me-1"></i>Fast mode - editing directly...';
+        updateStatus.className = 'badge bg-warning ms-2';
+
+        // Include current tags in the request
+        const currentTags = document.getElementById('character_tags').value.trim();
+
+        const requestData = { edit_request: editRequest };
+        if (currentTags) {
+            requestData.current_tags = currentTags;
+        }
+
+        fetch(window.location.href + '/fast', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateStatus.innerHTML = '<i class="fas fa-check me-1"></i>Character updated!';
+                updateStatus.className = 'badge bg-success ms-2';
+
+                // Update the character display with new data
+                updateCharacterDisplay(data.character);
+
+                // Show success message and keep user on page to see highlights
+                showEditSuccess('Character updated successfully! You can see the changes highlighted in blue above.');
+            } else {
+                throw new Error(data.error || 'Fast edit failed');
+            }
+        })
+        .catch(error => {
+            console.error('Fast edit error:', error);
+            updateStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Fast edit failed';
+            updateStatus.className = 'badge bg-danger ms-2';
+            editBtn.disabled = false;
+            editBtn.innerHTML = '<i class="fas fa-magic me-1"></i>AI Update Character';
+        });
+    }
+
+    function updateCharacterDisplay(characterData) {
+        // Update character fields with new data and highlight changes
+        Object.keys(characterData).forEach(field => {
+            if (charElements[field] && characterData[field]) {
+                updateCharacterField(field, characterData[field]);
+            }
+        });
+    }
+
+    function clearPreviousHighlights() {
+        // Remove all previous highlights from all character fields
+        Object.values(charElements).forEach(element => {
+            if (element) {
+                element.querySelectorAll('.new-content-highlight').forEach(highlightedSpan => {
+                    // Replace highlighted span with plain text
+                    const parent = highlightedSpan.parentNode;
+                    parent.replaceChild(document.createTextNode(highlightedSpan.textContent), highlightedSpan);
+                    parent.normalize(); // Merge adjacent text nodes
+                });
+
+                // Also remove highlight class from badges (for roles/tags)
+                element.classList.remove('new-content-highlight');
+            }
+        });
+    }
+
+    function performRealTimeUpdate(editRequest, currentTags) {
+        // Step 1: Get AI preview of changes (button already disabled)
+        updateStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>AI is generating changes...';
+        updateStatus.className = 'badge bg-info ms-2';
+
+        const requestData = { edit_request: editRequest };
+        if (currentTags) {
+            requestData.current_tags = currentTags;
+        }
+
+        fetch(window.location.href + '/preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(previewData => {
+            if (previewData.error) {
+                throw new Error(previewData.error);
+            }
+
+            // Step 2: Show real-time updates
+            showRealTimeChanges(previewData);
+
+            // Step 3: Save the changes
+            setTimeout(() => {
+                saveCharacterChanges(editRequest);
+            }, 3000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Reset UI on error
+            editBtn.disabled = false;
+            editBtn.innerHTML = originalBtnText;
+            updateStatus.style.display = 'none';
+            document.querySelector('.card-body').style.opacity = '1';
+            alert('An error occurred while updating the character. Please try again.');
+        });
+    }
+
+    function showRealTimeChanges(newData) {
+        updateStatus.innerHTML = '<i class="fas fa-magic me-1"></i>Applying changes...';
+        updateStatus.className = 'badge bg-success ms-2';
+
+        const updates = [
+            { field: 'name', delay: 500 },
+            { field: 'age', delay: 800 },
+            { field: 'occupation', delay: 1100 },
+            { field: 'role', delay: 1400 },
+            { field: 'description', delay: 1700 },
+            { field: 'personality', delay: 2200 },
+            { field: 'backstory', delay: 2700 },
+            { field: 'tags', delay: 3200 }
+        ];
+
+        updates.forEach(update => {
+            setTimeout(() => {
+                updateCharacterField(update.field, newData[update.field]);
+            }, update.delay);
+        });
+    }
+
+    function updateCharacterField(fieldName, newValue) {
+        const element = charElements[fieldName];
+        if (!element || !newValue) return;
+
+        // Store original content for comparison
+        const originalContent = element.textContent || element.innerHTML;
+
+        // Highlight the field
+        highlightField(fieldName);
+
+        // Update the content based on field type
+        if (fieldName === 'tags') {
+            if (Array.isArray(newValue)) {
+                // For tags, highlight new tags
+                const originalTags = Array.from(element.querySelectorAll('.badge')).map(badge => badge.textContent.trim());
+                const newTags = newValue;
+
+                element.innerHTML = newValue.map(tag => {
+                    const isNew = !originalTags.includes(tag);
+                    const highlightClass = isNew ? 'new-content-highlight' : '';
+                    return `<span class="badge bg-warning text-dark me-1 mb-1 ${highlightClass}">${tag}</span>`;
+                }).join('');
+            }
+        } else if (fieldName === 'role') {
+            const roleColors = {
+                'protagonist': 'primary',
+                'secondary protagonist': 'info',
+                'villain': 'danger',
+                'antagonist': 'warning'
+            };
+            const colorClass = roleColors[newValue.toLowerCase()] || 'secondary';
+            element.className = `badge bg-${colorClass} me-2`;
+
+            // Check if role changed
+            const originalRole = originalContent.trim();
+            const newRole = newValue.charAt(0).toUpperCase() + newValue.slice(1);
+
+            if (originalRole !== newRole) {
+                element.classList.add('new-content-highlight');
+            }
+
+            element.textContent = newRole;
+        } else {
+            // Animate text change with word-level highlighting
+            element.style.opacity = '0.5';
+            setTimeout(() => {
+                const highlightedContent = highlightTextChanges(originalContent, newValue);
+                element.innerHTML = highlightedContent;
+                element.style.opacity = '1';
+            }, 200);
+        }
+    }
+
+    function saveCharacterChanges(editRequest) {
+        updateStatus.innerHTML = '<i class="fas fa-save me-1"></i>Saving changes...';
+
+        // Include current tags in the save request
+        const currentTags = document.getElementById('character_tags').value.trim();
+        let formData = 'edit_request=' + encodeURIComponent(editRequest);
+        if (currentTags) {
+            formData += '&character_tags=' + encodeURIComponent(currentTags);
+        }
+
+        // Send the actual save request to the API endpoint
+        fetch(`/api/characters/{{ character.id }}/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Success - show completion message
+                updateStatus.innerHTML = '<i class="fas fa-check me-1"></i>Character updated!';
+                updateStatus.className = 'badge bg-success ms-2';
+
+                // Show success message and keep user on page to see highlights
+                showEditSuccess('Character updated successfully! You can see the changes highlighted in blue above.');
+
+                // Clear the edit request
+                document.getElementById('edit_request').value = '';
+            } else {
+                throw new Error(data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            updateStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Save failed';
+            updateStatus.className = 'badge bg-danger ms-2';
+        });
+    }
+
+
+
+    function highlightField(fieldName) {
+        const element = charElements[fieldName];
+        if (element) {
+            // Add highlight effect
+            element.style.transition = 'all 0.3s ease';
+            element.style.backgroundColor = '#fff3cd';
+            element.style.border = '2px solid #ffc107';
+
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+                element.style.backgroundColor = '';
+                element.style.border = '';
+            }, 2000);
+        }
+    }
+
+    function highlightTextChanges(originalText, newText) {
+        if (!originalText || !newText) return newText;
+
+        // Simple word-based comparison
+        const originalWords = originalText.split(/(\s+)/);
+        const newWords = newText.split(/(\s+)/);
+
+        // Find the longest common subsequence to identify changes
+        const result = [];
+        let originalIndex = 0;
+        let newIndex = 0;
+
+        while (newIndex < newWords.length) {
+            const newWord = newWords[newIndex];
+
+            // Check if this word exists in the original text from current position
+            let foundInOriginal = false;
+            for (let i = originalIndex; i < originalWords.length; i++) {
+                if (originalWords[i] === newWord) {
+                    foundInOriginal = true;
+                    originalIndex = i + 1;
+                    break;
+                }
+            }
+
+            if (foundInOriginal || /^\s+$/.test(newWord)) {
+                // Word exists in original or is whitespace, don't highlight
+                result.push(newWord);
+            } else {
+                // New or changed word, highlight it
+                if (/^\s+$/.test(newWord)) {
+                    result.push(newWord);
+                } else {
+                    result.push(`<span class="new-content-highlight">${newWord}</span>`);
+                }
+            }
+
+            newIndex++;
+        }
+
+        return result.join('');
+    }
+
+    // Auto-resize textarea
+    const textarea = document.getElementById('edit_request');
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+
+    // Initial textarea resize
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+
+    // Load suggestions on demand
+    const loadSuggestionsBtn = document.getElementById('loadSuggestionsBtn');
+    if (loadSuggestionsBtn) {
+        loadSuggestionsBtn.addEventListener('click', function() {
+            loadAISuggestions();
+        });
+    }
+});
+
+function loadAISuggestions() {
+    const btn = document.getElementById('loadSuggestionsBtn');
+    const container = document.getElementById('suggestionsContainer');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+
+    fetch(window.location.href + '/suggestions')
+    .then(response => response.json())
+    .then(data => {
+        if (data.suggestions && data.suggestions.length > 0) {
+            container.innerHTML = `
+                <p class="text-muted mb-3">The AI analyzed your character and suggests these improvements:</p>
+                <div class="list-group list-group-flush">
+                    ${data.suggestions.map((suggestion, index) => `
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Suggestion ${index + 1}</div>
+                                ${suggestion}
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="useSuggestion('${suggestion.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-magic me-1"></i>Use This
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            btn.style.display = 'none';
+        } else {
+            container.innerHTML = '<p class="text-muted text-center">No suggestions available at this time.</p>';
+            btn.innerHTML = '<i class="fas fa-download me-1"></i>Load Suggestions';
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Suggestions loading error:', error);
+        container.innerHTML = '<p class="text-danger text-center">Failed to load suggestions. Please try again.</p>';
+        btn.innerHTML = '<i class="fas fa-download me-1"></i>Load Suggestions';
+        btn.disabled = false;
+    });
+}
+
+function showEditSuccess(message) {
+    // Update status to show success
+    updateStatus.innerHTML = `<i class="fas fa-check me-1"></i>${message}`;
+    updateStatus.className = 'badge bg-success ms-2';
+    updateStatus.style.display = 'inline-block';
+
+    // Reset edit button
+    editBtn.disabled = false;
+    editBtn.innerHTML = '<i class="fas fa-magic me-1"></i>AI Update Character';
+
+    // Clear the edit request textarea
+    const textarea = document.getElementById('edit_request');
+    textarea.value = '';
+    textarea.style.height = 'auto';
+
+    // Show helpful buttons
+    const viewResultBtn = document.getElementById('viewResultBtn');
+    const makeAnotherEditBtn = document.getElementById('makeAnotherEditBtn');
+
+    if (viewResultBtn) {
+        viewResultBtn.classList.remove('btn-outline-success');
+        viewResultBtn.classList.add('btn-success');
+        viewResultBtn.innerHTML = '<i class="fas fa-eye me-1"></i>View Final Result (Recommended)';
+    }
+
+    if (makeAnotherEditBtn) {
+        makeAnotherEditBtn.style.display = 'inline-block';
+        makeAnotherEditBtn.onclick = function() {
+            // Clear highlights and reset for new edit
+            clearPreviousHighlights();
+            updateStatus.style.display = 'none';
+            viewResultBtn.classList.remove('btn-success');
+            viewResultBtn.classList.add('btn-outline-success');
+            viewResultBtn.innerHTML = '<i class="fas fa-eye me-1"></i>View Final Result';
+            makeAnotherEditBtn.style.display = 'none';
+            textarea.focus();
+        };
+    }
+
+    // Add a subtle notification
+    showNotification('✨ Changes highlighted in blue! Click "View Final Result" when ready.', 'success');
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 400px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function useSuggestion(suggestion) {
+    const textarea = document.getElementById('edit_request');
+    textarea.value = suggestion;
+    textarea.focus();
+
+    // Trigger auto-resize
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+
+    // Scroll to form
+    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
+
+<style>
+/* Custom styles for the editing interface */
+.character-avatar {
+    flex-shrink: 0;
+}
+
+.card-body {
+    transition: opacity 0.3s ease;
+}
+
+#char-name {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+#char-description, #char-personality, #char-backstory {
+    min-height: 60px;
+    line-height: 1.6;
+    transition: all 0.3s ease;
+}
+
+#char-tags .badge {
+    font-size: 0.85em;
+}
+
+/* New content highlighting - simple blue text color */
+.new-content-highlight {
+    color: #2563eb !important;
+    font-weight: 500;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(45deg, #0056b3, #004085);
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    .col-lg-8, .col-lg-4 {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}

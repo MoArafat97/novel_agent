@@ -1,0 +1,186 @@
+{% extends "layout.html" %}
+
+{% block title %}AI Lore Creator - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}">Lore</a></li>
+                <li class="breadcrumb-item active">AI Lore Creator</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-robot me-2"></i>AI Lore Creator</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - Powered by DeepSeek AI</p>
+            </div>
+            <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Lore
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- AI Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        {% if ai_available %}
+            <div class="alert alert-success" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>AI Assistant Ready!</strong> DeepSeek AI will help create detailed lore entries from your description.
+            </div>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>AI Unavailable:</strong> Basic lore creation will be used. Check your OpenRouter API configuration.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Lore Creation Form -->
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-magic me-2"></i>Create Your Lore Entry
+                    {% if ai_available %}
+                        <span class="badge bg-success ms-2">AI Powered</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="loreForm">
+                    <div class="mb-4">
+                        <label for="title" class="form-label">Lore Title *</label>
+                        <input type="text" class="form-control form-control-lg" id="title" name="title" required
+                               placeholder="e.g., The Great Convergence, Order of the Silver Dawn, The Floating Cities">
+                        <div class="form-text">What is the name or title of this lore entry?</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="prompt" class="form-label">Lore Description *</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="6" required
+                                  placeholder="Describe this lore element in detail. Tell me about its history, significance, how it works, who's involved, cultural impact, or anything else you envision..."></textarea>
+                        <div class="form-text">
+                            {% if ai_available %}
+                                <i class="fas fa-robot me-1"></i>The AI will analyze your description and create detailed lore fields automatically.
+                            {% else %}
+                                This will be used as the lore entry's basic description.
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-warning btn-lg" id="createBtn">
+                            {% if ai_available %}
+                                <i class="fas fa-magic me-1"></i>Create with AI
+                            {% else %}
+                                <i class="fas fa-plus me-1"></i>Create Lore Entry
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Examples and Tips -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    {% if ai_available %}AI Lore Creation Tips{% else %}Lore Creation Tips{% endif %}
+                </h5>
+
+                {% if ai_available %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>What the AI Can Do:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Expand basic concepts into rich worldbuilding</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Create detailed histories and explanations</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Suggest appropriate categories and connections</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Generate relevant tags for organization</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Ensure consistency with your novel's genre</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Example Prompts:</h6>
+                            <div class="small">
+                                <p><strong>History:</strong> "A great war that changed the balance of power between magic users and technology"</p>
+                                <p><strong>Culture:</strong> "A society where people's social status is determined by their connection to nature"</p>
+                                <p><strong>Magic System:</strong> "Magic that requires physical objects as conduits and has a cost to the user"</p>
+                                <p><strong>Geography:</strong> "Floating islands connected by bridges of crystallized air"</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Lore Categories:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-history me-2"></i>History - Past events, wars, discoveries</li>
+                                <li><i class="fas fa-users me-2"></i>Culture - Traditions, customs, beliefs</li>
+                                <li><i class="fas fa-magic me-2"></i>Magic/Technology - How systems work</li>
+                                <li><i class="fas fa-map me-2"></i>Geography - Places, locations, features</li>
+                                <li><i class="fas fa-crown me-2"></i>Politics - Governments, factions, power</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Tips for Good Lore:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-lightbulb me-2"></i>Focus on story-relevant details</li>
+                                <li><i class="fas fa-lightbulb me-2"></i>Consider how it affects characters</li>
+                                <li><i class="fas fa-lightbulb me-2"></i>Think about cause and effect</li>
+                                <li><i class="fas fa-lightbulb me-2"></i>Keep it consistent with your world</li>
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Animation -->
+<div class="row mt-4" id="loadingSection" style="display: none;">
+    <div class="col-md-8 mx-auto">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Creating Your Lore Entry...</h5>
+                <p class="text-muted">The AI is analyzing your description and building detailed lore content. This may take a moment.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('loreForm').addEventListener('submit', function() {
+    // Show loading animation
+    document.getElementById('loadingSection').style.display = 'block';
+    document.getElementById('createBtn').disabled = true;
+    document.getElementById('createBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creating...';
+
+    // Scroll to loading section
+    document.getElementById('loadingSection').scrollIntoView({ behavior: 'smooth' });
+});
+</script>
+{% endblock %}

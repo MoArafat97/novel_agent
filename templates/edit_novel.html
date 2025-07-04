@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Novel</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="title" name="title" required 
+                               value="{{ novel.title }}" placeholder="Enter your novel's title">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="genre" class="form-label">Genre *</label>
+                        <select class="form-select" id="genre" name="genre" required>
+                            <option value="">Select a genre</option>
+                            <option value="Fantasy" {% if novel.genre == 'Fantasy' %}selected{% endif %}>Fantasy</option>
+                            <option value="Science Fiction" {% if novel.genre == 'Science Fiction' %}selected{% endif %}>Science Fiction</option>
+                            <option value="Mystery" {% if novel.genre == 'Mystery' %}selected{% endif %}>Mystery</option>
+                            <option value="Romance" {% if novel.genre == 'Romance' %}selected{% endif %}>Romance</option>
+                            <option value="Thriller" {% if novel.genre == 'Thriller' %}selected{% endif %}>Thriller</option>
+                            <option value="Horror" {% if novel.genre == 'Horror' %}selected{% endif %}>Horror</option>
+                            <option value="Historical Fiction" {% if novel.genre == 'Historical Fiction' %}selected{% endif %}>Historical Fiction</option>
+                            <option value="Contemporary Fiction" {% if novel.genre == 'Contemporary Fiction' %}selected{% endif %}>Contemporary Fiction</option>
+                            <option value="Young Adult" {% if novel.genre == 'Young Adult' %}selected{% endif %}>Young Adult</option>
+                            <option value="Literary Fiction" {% if novel.genre == 'Literary Fiction' %}selected{% endif %}>Literary Fiction</option>
+                            <option value="Adventure" {% if novel.genre == 'Adventure' %}selected{% endif %}>Adventure</option>
+                            <option value="Other" {% if novel.genre == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="description" name="description" rows="5" required 
+                                  placeholder="Describe your novel's plot, themes, or concept...">{{ novel.description }}</textarea>
+                        <div class="form-text">Provide a brief overview of your story idea, main themes, or plot concept.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('novel_detail', novel_id=novel.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Update Novel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Last updated:</strong> {{ novel.updated_at[:19].replace('T', ' ') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

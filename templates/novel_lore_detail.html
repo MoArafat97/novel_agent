@@ -1,0 +1,220 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ lore.title }} - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}">Lore</a></li>
+                <li class="breadcrumb-item active">{{ lore.title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1>
+                    <i class="fas fa-scroll me-2"></i>{{ lore.title }}
+                    {% if lore.category %}
+                        <span class="badge bg-{% if lore.category == 'History' %}primary{% elif lore.category == 'Culture' %}info{% elif lore.category == 'Magic' %}success{% elif lore.category == 'Technology' %}warning{% elif lore.category == 'Geography' %}secondary{% elif lore.category == 'Politics' %}danger{% else %}dark{% endif %} ms-2">
+                            {{ lore.category }}
+                        </span>
+                    {% endif %}
+                    {% if lore.ai_generated %}
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-robot me-1"></i>AI Generated
+                        </span>
+                    {% endif %}
+                </h1>
+                <p class="text-muted mb-0">{{ novel.title }} - {{ lore.category or 'Lore Entry' }}</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('novel_edit_lore', novel_id=novel.id, lore_id=lore.id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-1"></i>Edit Lore
+                </a>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-info" id="crossReferenceBtn"
+                            data-entity-type="lore"
+                            data-entity-id="{{ lore.id }}"
+                            data-novel-id="{{ novel.id }}">
+                        <i class="fas fa-project-diagram me-1"></i>Cross-Reference
+                    </button>
+                    <button type="button" class="btn btn-success" id="streamingCrossReferenceBtn"
+                            data-entity-type="lore"
+                            data-entity-id="{{ lore.id }}"
+                            data-novel-id="{{ novel.id }}"
+                            title="Real-time Cross-Reference Analysis">
+                        <i class="fas fa-stream me-1"></i>Live Analysis
+                    </button>
+                </div>
+                <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Lore
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lore Details -->
+<div class="row">
+    <div class="col-md-8">
+        <!-- Description -->
+        {% if lore.description %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Description</h5>
+            </div>
+            <div class="card-body">
+                <p class="lead">{{ lore.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Detailed Information -->
+        {% if lore.details %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-book me-2"></i>Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="lore-details">
+                    {{ lore.details|replace('\n', '<br>')|safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Significance -->
+        {% if lore.significance %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-star me-2"></i>Significance</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ lore.significance }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Connections -->
+        {% if lore.connections %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-project-diagram me-2"></i>Connections</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ lore.connections }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Tags -->
+        {% if lore.tags %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tags me-2"></i>Tags</h5>
+            </div>
+            <div class="card-body">
+                {% for tag in lore.tags %}
+                    <span class="badge bg-warning text-dark me-2 mb-2">{{ tag }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('novel_edit_lore', novel_id=novel.id, lore_id=lore.id) }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit me-2"></i>Edit This Lore
+                    </a>
+                    <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus me-2"></i>Create New Lore
+                    </a>
+                    <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-scroll me-2"></i>All Lore Entries
+                    </a>
+                    <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-globe me-2"></i>Worldbuilding Hub
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lore Info -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Lore Info</h5>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <p><strong>Novel:</strong> {{ novel.title }}</p>
+                    <p><strong>Genre:</strong> {{ novel.genre or 'Not specified' }}</p>
+                    <p><strong>Category:</strong> {{ lore.category or 'Not specified' }}</p>
+                    {% if lore.ai_generated %}
+                        <p><strong>AI Generated:</strong> <span class="text-success">Yes</span></p>
+                    {% endif %}
+                    {% if lore.user_prompt %}
+                        <p><strong>Original Prompt:</strong> {{ lore.user_prompt[:100] }}{% if lore.user_prompt|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                    {% if lore.id %}
+                        <p><strong>Lore ID:</strong> <code>{{ lore.id[:8] }}...</code></p>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Content -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-project-diagram me-2"></i>Explore Connections</h5>
+                <p class="text-muted">Find related characters, locations, and other lore entries that connect to {{ lore.title }}.</p>
+                <div class="btn-group">
+                    <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?q={{ lore.title }}" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-1"></i>Search for "{{ lore.title }}"
+                    </a>
+                    {% if lore.category %}
+                        <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?types=lore&q={{ lore.category }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-filter me-1"></i>More {{ lore.category }} Lore
+                        </a>
+                    {% endif %}
+                    {% if lore.tags %}
+                        {% for tag in lore.tags[:2] %}
+                            <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?q={{ tag }}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-tag me-1"></i>{{ tag }}
+                            </a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cross-reference.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cross-reference.js') }}"></script>
+<script src="{{ url_for('static', filename='js/streaming-cross-reference.js') }}"></script>
+<script src="{{ url_for('static', filename='js/approval-workflow.js') }}"></script>
+<script src="{{ url_for('static', filename='js/undo-functionality.js') }}"></script>
+{% endblock %}

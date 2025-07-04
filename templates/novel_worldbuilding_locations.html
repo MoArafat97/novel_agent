@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+
+{% block title %}Locations - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item active">Locations</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-map-marker-alt me-2"></i>Locations</h1>
+                <p class="text-muted mb-0">{{ novel.title }}</p>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('novel_create_location', novel_id=novel.id) }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create Location
+                </a>
+                <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Worldbuilding
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Locations Grid -->
+<div class="row">
+    {% if locations %}
+        {% for location in locations %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ location.name }}</h5>
+                        <span class="badge bg-secondary">{{ location.type }}</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">{{ location.description[:150] }}{% if location.description|length > 150 %}...{% endif %}</p>
+                        
+                        {% if location.climate %}
+                            <p class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-cloud-sun me-1"></i>{{ location.climate }}
+                                </small>
+                            </p>
+                        {% endif %}
+                        
+                        {% if location.tags %}
+                            <div class="mb-3">
+                                {% for tag in location.tags[:3] %}
+                                    <span class="badge bg-warning text-dark me-1">{{ tag }}</span>
+                                {% endfor %}
+                                {% if location.tags|length > 3 %}
+                                    <span class="badge bg-warning text-dark">+{{ location.tags|length - 3 }} more</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{{ url_for('novel_location_detail', novel_id=novel.id, location_id=location.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <a href="{{ url_for('novel_edit_location', novel_id=novel.id, location_id=location.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <!-- Empty State -->
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No Locations Yet</h4>
+                <p class="text-muted">Start building your world by creating your first location.</p>
+                <a href="{{ url_for('novel_create_location', novel_id=novel.id) }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create First Location
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Quick Stats -->
+{% if locations %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Location Statistics</h6>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="h4 text-primary">{{ locations|length }}</div>
+                            <small class="text-muted">Total Locations</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-info">{{ locations|selectattr('type', 'equalto', 'City')|list|length }}</div>
+                            <small class="text-muted">Cities</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-success">{{ locations|selectattr('type', 'equalto', 'Natural Feature')|list|length }}</div>
+                            <small class="text-muted">Natural Features</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-warning">{{ locations|selectattr('ai_generated', 'equalto', true)|list|length }}</div>
+                            <small class="text-muted">AI Generated</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

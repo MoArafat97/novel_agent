@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+
+{% block title %}Create Location - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item active">Create Location</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-map-marker-alt me-2"></i>Create Location</h1>
+                <p class="text-muted mb-0">{{ novel.title }}</p>
+            </div>
+            <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Worldbuilding
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- AI Location Creator -->
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-robot me-2"></i>AI Location Creator</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Describe your location and let AI create a detailed profile for you.</p>
+
+                <form id="ai-location-form">
+                    <div class="mb-3">
+                        <label for="location-name" class="form-label">Location Name *</label>
+                        <input type="text" class="form-control" id="location-name" name="name" required
+                               placeholder="e.g., Shadowmere Castle, The Whispering Woods, New Haven City">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="location-prompt" class="form-label">Describe Your Location *</label>
+                        <textarea class="form-control" id="location-prompt" name="prompt" rows="4" required
+                                  placeholder="Describe your location in a few sentences. For example:
+- A mysterious forest where the trees seem to whisper secrets
+- A floating city powered by magical crystals
+- An underground marketplace in the sewers of the capital
+- A remote mountain monastery where monks train in ancient arts"></textarea>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="create-location-btn">
+                            <i class="fas fa-magic me-1"></i>Create Location with AI
+                        </button>
+                        <a href="{{ url_for('novel_worldbuilding_locations', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Locations
+                        </a>
+                    </div>
+                </form>
+
+                <!-- Loading indicator -->
+                <div id="ai-loading" class="text-center mt-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Creating location...</span>
+                    </div>
+                    <p class="mt-2 text-muted">AI is crafting your location...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const aiLocationForm = document.getElementById('ai-location-form');
+    const createLocationBtn = document.getElementById('create-location-btn');
+    const aiLoading = document.getElementById('ai-loading');
+
+    // Handle AI location creation
+    aiLocationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('location-name').value.trim();
+        const prompt = document.getElementById('location-prompt').value.trim();
+
+        if (!name || !prompt) {
+            alert('Please fill in both the location name and description.');
+            return;
+        }
+
+        createLocationWithAI(name, prompt);
+    });
+
+    function createLocationWithAI(name, prompt) {
+        createLocationBtn.disabled = true;
+        aiLoading.style.display = 'block';
+
+        fetch('/api/locations/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: name,
+                prompt: prompt,
+                novel_id: '{{ novel.id }}',
+                novel_context: {
+                    title: '{{ novel.title }}',
+                    genre: '{{ novel.genre }}',
+                    description: '{{ novel.description }}'
+                }
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Directly save the location without preview
+                saveLocationDirectly(data.location);
+            } else {
+                alert('Location creation failed: ' + (data.error || 'Unknown error'));
+                createLocationBtn.disabled = false;
+                aiLoading.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to create location. Please try again.');
+            createLocationBtn.disabled = false;
+            aiLoading.style.display = 'none';
+        });
+    }
+
+    function saveLocationDirectly(locationData) {
+        // Create a form and submit it to save the location
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("novel_create_location", novel_id=novel.id) }}';
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'location_data';
+        input.value = JSON.stringify(locationData);
+
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+});
+</script>
+{% endblock %}

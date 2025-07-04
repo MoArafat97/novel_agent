@@ -1,0 +1,243 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ character.name }} - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}">Characters</a></li>
+                <li class="breadcrumb-item active">{{ character.name }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1>
+                    <i class="fas fa-user me-2"></i>{{ character.name }}
+                    {% if character.role %}
+                        <span class="badge bg-{% if character.role == 'protagonist' %}primary{% elif character.role == 'secondary protagonist' %}info{% elif character.role == 'villain' %}danger{% elif character.role == 'antagonist' %}warning{% else %}secondary{% endif %} ms-2">
+                            {{ character.role.title() }}
+                        </span>
+                    {% endif %}
+                </h1>
+                <p class="text-muted mb-0">{{ novel.title }} - {{ character.occupation or 'Character' }}</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('novel_edit_character', novel_id=novel.id, character_id=character.id) }}" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i>Edit Character
+                </a>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-info" id="crossReferenceBtn"
+                            data-entity-type="characters"
+                            data-entity-id="{{ character.id }}"
+                            data-novel-id="{{ novel.id }}">
+                        <i class="fas fa-project-diagram me-1"></i>Cross-Reference
+                    </button>
+                    <button type="button" class="btn btn-success" id="streamingCrossReferenceBtn"
+                            data-entity-type="characters"
+                            data-entity-id="{{ character.id }}"
+                            data-novel-id="{{ novel.id }}"
+                            title="Real-time Cross-Reference Analysis">
+                        <i class="fas fa-stream me-1"></i>Live Analysis
+                    </button>
+                </div>
+                <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Characters
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Character Details -->
+<div class="row">
+    <div class="col-md-8">
+        <!-- Basic Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> {{ character.name }}</p>
+                        {% if character.age %}
+                            <p><strong>Age:</strong> {{ character.age }}</p>
+                        {% endif %}
+                        {% if character.occupation %}
+                            <p><strong>Occupation:</strong> {{ character.occupation }}</p>
+                        {% endif %}
+                        {% if character.role %}
+                            <p><strong>Story Role:</strong>
+                                <span class="badge bg-{% if character.role == 'protagonist' %}primary{% elif character.role == 'secondary protagonist' %}info{% elif character.role == 'villain' %}danger{% elif character.role == 'antagonist' %}warning{% else %}secondary{% endif %}">
+                                    {{ character.role.title() }}
+                                </span>
+                            </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {% if character.created_at %}
+                            <p><strong>Created:</strong> {{ character.created_at[:10] }}</p>
+                        {% endif %}
+                        {% if character.updated_at %}
+                            <p><strong>Last Updated:</strong> {{ character.updated_at[:10] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-align-left me-2"></i>Description</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ character.description or 'No description provided.' }}</p>
+            </div>
+        </div>
+
+        <!-- Personality -->
+        {% if character.personality %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-heart me-2"></i>Personality</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ character.personality }}</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Backstory -->
+        {% if character.backstory %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Backstory</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ character.backstory }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('novel_edit_character', novel_id=novel.id, character_id=character.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Character
+                    </a>
+                    <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?q={{ character.name }}" class="btn btn-outline-info">
+                        <i class="fas fa-search me-2"></i>Find Related Content
+                    </a>
+                    <form method="POST" action="{{ url_for('novel_delete_character', novel_id=novel.id, character_id=character.id) }}" 
+                          onsubmit="return confirm('Are you sure you want to delete {{ character.name }}? This action cannot be undone.')">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-trash me-2"></i>Delete Character
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tags -->
+        {% if character.tags %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-tags me-2"></i>Tags</h5>
+                </div>
+                <div class="card-body">
+                    {% for tag in character.tags %}
+                        <span class="badge bg-warning text-dark me-1 mb-1">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Quick Navigation -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-compass me-2"></i>Quick Navigation</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-users me-2"></i>All Characters
+                    </a>
+                    <a href="{{ url_for('novel_worldbuilding_locations', novel_id=novel.id) }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-map-marker-alt me-2"></i>Locations
+                    </a>
+                    <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-scroll me-2"></i>Lore
+                    </a>
+                    <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-globe me-2"></i>Worldbuilding Hub
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Character Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Character Info</h5>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <p><strong>Novel:</strong> {{ novel.title }}</p>
+                    <p><strong>Genre:</strong> {{ novel.genre or 'Not specified' }}</p>
+                    {% if character.id %}
+                        <p><strong>Character ID:</strong> <code>{{ character.id[:8] }}...</code></p>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Content (Future Enhancement) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-project-diagram me-2"></i>Explore Connections</h5>
+                <p class="text-muted">Find related characters, locations, and lore entries that connect to {{ character.name }}.</p>
+                <div class="btn-group">
+                    <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?q={{ character.name }}" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-1"></i>Search for "{{ character.name }}"
+                    </a>
+                    {% if character.occupation %}
+                        <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?q={{ character.occupation }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-search me-1"></i>Find Similar Roles
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cross-reference.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cross-reference.js') }}"></script>
+<script src="{{ url_for('static', filename='js/streaming-cross-reference.js') }}"></script>
+<script src="{{ url_for('static', filename='js/approval-workflow.js') }}"></script>
+<script src="{{ url_for('static', filename='js/undo-functionality.js') }}"></script>
+{% endblock %}

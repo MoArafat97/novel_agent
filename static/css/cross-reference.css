@@ -1,0 +1,287 @@
+/**
+ * Cross-Reference System Styles
+ * 
+ * Additional CSS for cross-reference analysis UI components
+ */
+
+/* Cross-reference button styling */
+#crossReferenceBtn {
+    transition: all 0.3s ease;
+}
+
+#crossReferenceBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+#crossReferenceBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Loading spinner animation */
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Cross-reference modal styling */
+#crossReferenceModal .modal-dialog {
+    max-width: 90vw;
+}
+
+#crossReferenceModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Relationship cards */
+.relationship-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-left: 4px solid transparent;
+}
+
+.relationship-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.relationship-card.confidence-high {
+    border-left-color: #28a745;
+}
+
+.relationship-card.confidence-medium {
+    border-left-color: #ffc107;
+}
+
+.relationship-card.confidence-low {
+    border-left-color: #6c757d;
+}
+
+/* Update accordion styling */
+.update-accordion .accordion-button {
+    padding-left: 1rem;
+}
+
+.update-accordion .form-check {
+    margin-right: 1rem;
+}
+
+.update-accordion .accordion-button:not(.collapsed) {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+}
+
+/* Update details styling */
+.update-field {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.update-field-name {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.update-field-value {
+    color: #212529;
+    white-space: pre-wrap;
+}
+
+/* New entity cards */
+.new-entity-card {
+    transition: transform 0.2s ease;
+    border: 2px dashed #dee2e6;
+}
+
+.new-entity-card:hover {
+    transform: translateY(-2px);
+    border-color: #007bff;
+}
+
+.new-entity-card .badge {
+    font-size: 0.75rem;
+}
+
+/* Confidence badges */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Alert positioning for notifications */
+.cross-reference-alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    min-width: 300px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Progress indicators */
+.analysis-progress {
+    background: linear-gradient(90deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.analysis-progress .progress {
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.analysis-progress .progress-bar {
+    background-color: white;
+    transition: width 0.3s ease;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-indicator.status-analyzing {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-indicator.status-complete {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-indicator.status-error {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #crossReferenceModal .modal-dialog {
+        max-width: 95vw;
+        margin: 0.5rem;
+    }
+    
+    #crossReferenceModal .modal-body {
+        max-height: 60vh;
+    }
+    
+    .cross-reference-alert {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .relationship-card,
+    .new-entity-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Animation for result appearance */
+.analysis-result {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading state overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: 0.375rem;
+}
+
+.loading-overlay .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Entity type icons */
+.entity-type-icon {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    margin-right: 0.5rem;
+}
+
+.entity-type-icon.type-characters {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.entity-type-icon.type-locations {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.entity-type-icon.type-lore {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+/* Smooth transitions for interactive elements */
+.btn, .card, .badge, .alert {
+    transition: all 0.2s ease;
+}
+
+/* Focus states for accessibility */
+.update-checkbox:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+#crossReferenceBtn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}

@@ -1,0 +1,243 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ novel.title }} - Worldbuilding - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item active">Worldbuilding</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-globe me-2"></i>Worldbuilding</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - {{ novel.genre }}</p>
+            </div>
+            <a href="{{ url_for('novel_detail', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Novel
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Worldbuilding Navigation -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <h5 class="mb-1">Search</h5>
+                            <small class="text-muted">Find content in this novel</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <h5 class="mb-1">Characters</h5>
+                            <small class="text-muted">{{ characters|length }} character{{ 's' if characters|length != 1 else '' }}</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('novel_worldbuilding_locations', novel_id=novel.id) }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                            <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                            <h5 class="mb-1">Locations</h5>
+                            <small class="text-muted">{{ locations|length }} location{{ 's' if locations|length != 1 else '' }}</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                            <i class="fas fa-scroll fa-2x mb-2"></i>
+                            <h5 class="mb-1">Lore</h5>
+                            <small class="text-muted">{{ lore|length }} lore entr{{ 'ies' if lore|length != 1 else 'y' }}</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Overview -->
+<div class="row">
+    <!-- Recent Characters -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Recent Characters</h5>
+                <a href="{{ url_for('novel_create_character', novel_id=novel.id) }}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% if characters %}
+                    {% for character in characters[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ character.name }}</strong>
+                                {% if character.role %}
+                                    <span class="badge bg-{% if character.role == 'protagonist' %}primary{% elif character.role == 'secondary protagonist' %}info{% elif character.role == 'villain' %}danger{% elif character.role == 'antagonist' %}warning{% else %}secondary{% endif %} ms-1" style="font-size: 0.7em;">
+                                        {{ character.role.title() }}
+                                    </span>
+                                {% endif %}
+                                <br>
+                                <small class="text-muted">{{ character.occupation }}</small>
+                            </div>
+                            <a href="{{ url_for('novel_character_detail', novel_id=novel.id, character_id=character.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                        {% if not loop.last %}<hr class="my-2">{% endif %}
+                    {% endfor %}
+                    {% if characters|length > 5 %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('novel_worldbuilding_characters', novel_id=novel.id) }}" class="btn btn-sm btn-outline-success">
+                                View All {{ characters|length }} Characters
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted text-center">No characters yet</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('novel_create_character', novel_id=novel.id) }}" class="btn btn-sm btn-success">
+                            <i class="fas fa-plus me-1"></i>Create First Character
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Locations -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Recent Locations</h5>
+                <a href="{{ url_for('novel_create_location', novel_id=novel.id) }}" class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% if locations %}
+                    {% for location in locations[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ location.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ location.type }}</small>
+                            </div>
+                            <a href="{{ url_for('novel_location_detail', novel_id=novel.id, location_id=location.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                        {% if not loop.last %}<hr class="my-2">{% endif %}
+                    {% endfor %}
+                    {% if locations|length > 5 %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('novel_worldbuilding_locations', novel_id=novel.id) }}" class="btn btn-sm btn-outline-info">
+                                View All {{ locations|length }} Locations
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted text-center">No locations yet</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('novel_create_location', novel_id=novel.id) }}" class="btn btn-sm btn-info">
+                            <i class="fas fa-plus me-1"></i>Create First Location
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Lore -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-scroll me-2"></i>Recent Lore</h5>
+                <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-sm btn-outline-warning">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% if lore %}
+                    {% for lore_entry in lore[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ lore_entry.title }}</strong>
+                                <br>
+                                <small class="text-muted">{{ lore_entry.category }}</small>
+                            </div>
+                            <a href="{{ url_for('novel_lore_detail', novel_id=novel.id, lore_id=lore_entry.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                        {% if not loop.last %}<hr class="my-2">{% endif %}
+                    {% endfor %}
+                    {% if lore|length > 5 %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-sm btn-outline-warning">
+                                View All {{ lore|length }} Lore Entries
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted text-center">No lore yet</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-plus me-1"></i>Create First Lore Entry
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Create New:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_create_character', novel_id=novel.id) }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-user-plus me-2"></i>Add Character
+                            </a>
+                            <a href="{{ url_for('novel_create_location', novel_id=novel.id) }}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-map-pin me-2"></i>Add Location
+                            </a>
+                            <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-scroll me-2"></i>Add Lore Entry
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Explore:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search me-2"></i>Search This Novel
+                            </a>
+                            <a href="/api/connections/{{ novel.id }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-project-diagram me-2"></i>View Connections (API)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

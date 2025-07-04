@@ -1,0 +1,124 @@
+# Environment and Configuration Files
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# API Keys and Secrets
+config.py
+secrets.json
+api_keys.txt
+
+# Database Files and Data
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.json.bak
+*.json.backup
+
+# Cache and Temporary Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ChromaDB and Vector Database Files
+*.duckdb
+*.parquet
+chroma.sqlite3
+chroma-*
+
+# Log Files
+*.log
+logs/
+*.log.*
+log_*.txt
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Test Files and Benchmarks
+test_*.py
+*_test.py
+benchmark_*.json
+performance_*.json
+debug_*.py
+
+# Backup and Temporary Files
+*.bak
+*.backup
+*.tmp
+*.temp
+*~
+.#*
+#*#
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Coverage Reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Documentation Build
+docs/_build/
+site/
+
+# Flask Instance Folder
+instance/
+
+# Node.js (if any frontend tools are added)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sensitive HTML Files
+tag_color_preview.html

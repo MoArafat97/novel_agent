@@ -1,0 +1,889 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit {{ location.name }} - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Location Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding_locations', novel_id=novel.id) }}">Locations</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_location_detail', novel_id=novel.id, location_id=location.id) }}">{{ location.name }}</a></li>
+                <li class="breadcrumb-item active">Edit</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-robot me-2"></i>AI Location Editor</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - {{ location.name }}</p>
+            </div>
+            <a href="{{ url_for('novel_location_detail', novel_id=novel.id, location_id=location.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Location
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- AI Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        {% if ai_available %}
+            <div class="alert alert-success" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>AI Editor Ready!</strong> Make changes and watch your location update in real-time.
+            </div>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>AI Unavailable:</strong> Location editing is disabled. Check your OpenRouter API configuration.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Main Editing Interface -->
+<div class="row">
+    <!-- Location Profile (Left Side) -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i>Location Profile
+                    <span class="badge bg-info ms-2" id="updateStatus" style="display: none;">Updating...</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Location Header -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="location-avatar me-3">
+                                <i class="fas fa-map-marker-alt fa-3x text-muted"></i>
+                            </div>
+                            <div>
+                                <h2 class="mb-1" id="loc-name">{{ location.name }}</h2>
+                                <div class="mb-2">
+                                    {% if location.type %}
+                                        <span class="badge bg-secondary me-2" id="loc-type">{{ location.type }}</span>
+                                    {% endif %}
+                                    {% if location.climate %}
+                                        <span class="text-muted" id="loc-climate">{{ location.climate }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Details -->
+                <div class="row">
+                    <div class="col-12">
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-2">
+                                <i class="fas fa-align-left me-2"></i>Description
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="loc-description">
+                                {{ location.description or 'No description provided.' }}
+                            </div>
+                        </div>
+
+                        <!-- Geography -->
+                        {% if location.geography %}
+                        <div class="mb-4">
+                            <h6 class="text-success mb-2">
+                                <i class="fas fa-mountain me-2"></i>Geography
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="loc-geography">
+                                {{ location.geography }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Culture -->
+                        {% if location.culture %}
+                        <div class="mb-4">
+                            <h6 class="text-warning mb-2">
+                                <i class="fas fa-users me-2"></i>Culture
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="loc-culture">
+                                {{ location.culture }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- History -->
+                        {% if location.history %}
+                        <div class="mb-4">
+                            <h6 class="text-danger mb-2">
+                                <i class="fas fa-scroll me-2"></i>History
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="loc-history">
+                                {{ location.history }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Economy -->
+                        {% if location.economy %}
+                        <div class="mb-4">
+                            <h6 class="text-dark mb-2">
+                                <i class="fas fa-coins me-2"></i>Economy
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="loc-economy">
+                                {{ location.economy }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Notable Features -->
+                        {% if location.notable_features %}
+                        <div class="mb-4">
+                            <h6 class="text-purple mb-2">
+                                <i class="fas fa-star me-2"></i>Notable Features
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="loc-notable-features">
+                                {{ location.notable_features }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Tags -->
+                        <div class="mb-4">
+                            <h6 class="text-info mb-2">
+                                <i class="fas fa-tags me-2"></i>Tags
+                            </h6>
+                            <div id="loc-tags">
+                                {% if location.tags %}
+                                    {% for tag in location.tags %}
+                                        <span class="badge bg-warning text-dark me-1 mb-1">{{ tag }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No tags assigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Controls (Right Side) -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-magic me-2"></i>AI Editor
+                    {% if ai_available %}
+                        <span class="badge bg-success ms-2">Ready</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="editForm">
+                    <!-- Quick Tags Editor -->
+                    <div class="mb-4">
+                        <label for="location_tags" class="form-label">
+                            <i class="fas fa-tags me-1"></i>Quick Edit Tags
+                        </label>
+                        <input type="text" class="form-control" id="location_tags" name="location_tags"
+                               value="{{ location.tags|join(', ') if location.tags else '' }}"
+                               placeholder="city, capital, trading, coastal">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>Separate tags with commas. Include type for better search.
+                        </div>
+                    </div>
+
+                    <!-- AI Edit Request -->
+                    <div class="mb-4">
+                        <label for="edit_request" class="form-label">
+                            <i class="fas fa-robot me-1"></i>AI Edit Request
+                        </label>
+                        <textarea class="form-control" id="edit_request" name="edit_request" rows="5"
+                                  placeholder="Tell me what you want to change about this location..."></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            Example: "Add more detail to the history" or "Change the climate to tropical and update the culture accordingly"
+                        </div>
+                    </div>
+
+                    <!-- Speed Mode Toggle -->
+                    {% if ai_available %}
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="fastMode">
+                            <label class="form-check-label" for="fastMode">
+                                <i class="fas fa-bolt me-1"></i>Fast Mode
+                            </label>
+                            <div class="form-text">Skip preview for faster editing</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-success" id="saveTagsBtn">
+                            <i class="fas fa-save me-1"></i>Save Tags Only
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg" id="editBtn" {% if not ai_available %}disabled{% endif %}>
+                            {% if ai_available %}
+                                <i class="fas fa-magic me-1"></i>AI Update Location
+                            {% else %}
+                                <i class="fas fa-ban me-1"></i>AI Unavailable
+                            {% endif %}
+                        </button>
+                        <a href="{{ url_for('novel_location_detail', novel_id=novel.id, location_id=location.id) }}" class="btn btn-outline-success" id="viewResultBtn">
+                            <i class="fas fa-eye me-1"></i>View Final Result
+                        </a>
+                        <a href="{{ url_for('novel_worldbuilding_locations', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Locations
+                        </a>
+                        <button type="button" class="btn btn-outline-info" id="makeAnotherEditBtn" style="display: none;">
+                            <i class="fas fa-edit me-1"></i>Make Another Edit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Suggestions -->
+{% if ai_available %}
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>AI Suggestions</h5>
+                <button type="button" class="btn btn-light btn-sm" id="loadSuggestionsBtn">
+                    <i class="fas fa-download me-1"></i>Load Suggestions
+                </button>
+            </div>
+            <div class="card-body" id="suggestionsContainer">
+                <p class="text-muted text-center">
+                    <i class="fas fa-lightbulb fa-2x mb-2 d-block"></i>
+                    Click "Load Suggestions" to get AI improvement ideas for this location.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Examples and Tips -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    {% if ai_available %}AI Location Editing Tips{% else %}Location Editing Tips{% endif %}
+                </h5>
+
+                {% if ai_available %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>What You Can Change:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Climate and geography</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Culture and inhabitants</li>
+                                <li><i class="fas fa-check text-success me-2"></i>History and background</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Economy and trade</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Notable features and landmarks</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Example Edit Requests:</h6>
+                            <div class="small">
+                                <p><strong>"Add a mysterious underground network"</strong></p>
+                                <p><strong>"Change the climate to harsh desert conditions"</strong></p>
+                                <p><strong>"Make it a major trading hub with markets"</strong></p>
+                                <p><strong>"Add ancient ruins with magical properties"</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-muted">AI location editing is currently unavailable. Please check your API configuration.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Info -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card border-secondary">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Location Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Novel:</strong> {{ novel.title }}</p>
+                        <p><strong>Genre:</strong> {{ novel.genre or 'Not specified' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        {% if location.created_at %}
+                            <p><strong>Created:</strong> {{ location.created_at[:10] }}</p>
+                        {% endif %}
+                        {% if location.ai_generated %}
+                            <p><strong>AI Generated:</strong> <span class="badge bg-success">Yes</span></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editForm');
+    const editBtn = document.getElementById('editBtn');
+    const saveTagsBtn = document.getElementById('saveTagsBtn');
+    const updateStatus = document.getElementById('updateStatus');
+    const originalBtnText = editBtn.innerHTML;
+
+    // Location elements for real-time updates
+    const locElements = {
+        name: document.getElementById('loc-name'),
+        type: document.getElementById('loc-type'),
+        climate: document.getElementById('loc-climate'),
+        description: document.getElementById('loc-description'),
+        geography: document.getElementById('loc-geography'),
+        culture: document.getElementById('loc-culture'),
+        history: document.getElementById('loc-history'),
+        economy: document.getElementById('loc-economy'),
+        notable_features: document.getElementById('loc-notable-features'),
+        tags: document.getElementById('loc-tags')
+    };
+    // Handle AI editing
+    form.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
+
+        if (editBtn.disabled) return false;
+
+        const editRequest = document.getElementById('edit_request').value.trim();
+        if (!editRequest) {
+            alert('Please describe what you want to change about this location.');
+            return false;
+        }
+
+        startAIEditing(editRequest);
+    });
+
+    // Handle tags-only saving
+    saveTagsBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        saveTagsOnly();
+    });
+
+    function saveTagsOnly() {
+        const tagsInput = document.getElementById('location_tags').value.trim();
+        const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+
+        // Update UI
+        saveTagsBtn.disabled = true;
+        saveTagsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+
+        // Send tags update
+        fetch(`{{ url_for('novel_location_edit_tags', novel_id=novel.id, location_id=location.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'location_tags=' + encodeURIComponent(tagsInput)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update tags display
+                updateLocationField('tags', tags);
+                showNotification('Tags updated successfully!', 'success');
+            } else {
+                showNotification('Failed to update tags: ' + (data.error || 'Unknown error'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to update tags. Please try again.', 'danger');
+        })
+        .finally(() => {
+            saveTagsBtn.disabled = false;
+            saveTagsBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Tags Only';
+        });
+    }
+
+    function startAIEditing(editRequest) {
+        // Clear previous highlights before starting new edit
+        clearPreviousHighlights();
+
+        // Immediately disable button and show loading state
+        editBtn.disabled = true;
+        const originalBtnText = editBtn.innerHTML;
+        editBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+
+        // Show status indicator
+        updateStatus.style.display = 'inline-block';
+        updateStatus.className = 'badge bg-primary ms-2';
+
+        // Check if fast mode is enabled
+        const fastMode = document.getElementById('fastMode').checked;
+
+        if (fastMode) {
+            performFastEdit(editRequest);
+        } else {
+            // Get current tags for context
+            const currentTags = document.getElementById('location_tags').value.trim();
+            performRealTimeUpdate(editRequest, currentTags);
+        }
+    }
+    function performFastEdit(editRequest) {
+        // Update UI to show fast editing mode (button already disabled)
+        editBtn.innerHTML = '<i class="fas fa-bolt fa-spin me-1"></i>Fast editing...';
+        updateStatus.innerHTML = '<i class="fas fa-bolt me-1"></i>Fast mode - editing directly...';
+        updateStatus.className = 'badge bg-warning ms-2';
+
+        // Include current tags in the request
+        const currentTags = document.getElementById('location_tags').value.trim();
+
+        fetch(`{{ url_for('novel_location_edit_fast', novel_id=novel.id, location_id=location.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                edit_request: editRequest,
+                location_tags: currentTags
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update location display with new data
+                updateLocationDisplay(data.location);
+
+                // Show success
+                showEditSuccess('Location updated successfully!');
+
+                // Clear the edit request
+                document.getElementById('edit_request').value = '';
+            } else {
+                showNotification('Fast edit failed: ' + (data.error || 'Unknown error'), 'danger');
+                // Reset UI
+                editBtn.disabled = false;
+                editBtn.innerHTML = originalBtnText;
+                updateStatus.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to edit location. Please try again.', 'danger');
+            // Reset UI
+            editBtn.disabled = false;
+            editBtn.innerHTML = originalBtnText;
+            updateStatus.style.display = 'none';
+        });
+    }
+
+    function updateLocationDisplay(locationData) {
+        // Update location fields with new data and highlight changes
+        Object.keys(locationData).forEach(field => {
+            if (locElements[field] && locationData[field]) {
+                updateLocationField(field, locationData[field]);
+            }
+        });
+    }
+
+    function clearPreviousHighlights() {
+        // Remove all previous highlights from all location fields
+        Object.values(locElements).forEach(element => {
+            if (element) {
+                element.querySelectorAll('.new-content-highlight').forEach(highlightedSpan => {
+                    // Replace highlighted span with plain text
+                    const parent = highlightedSpan.parentNode;
+                    parent.replaceChild(document.createTextNode(highlightedSpan.textContent), highlightedSpan);
+                    parent.normalize(); // Merge adjacent text nodes
+                });
+
+                // Remove any background highlights
+                element.style.backgroundColor = '';
+            }
+        });
+    }
+
+    function performRealTimeUpdate(editRequest, currentTags) {
+        // Step 1: Get AI preview of changes (button already disabled)
+        updateStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>AI is generating changes...';
+        updateStatus.className = 'badge bg-info ms-2';
+
+        const requestData = { edit_request: editRequest };
+        if (currentTags) {
+            requestData.location_tags = currentTags;
+        }
+
+        fetch(`{{ url_for('novel_location_edit_preview', novel_id=novel.id, location_id=location.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success || data.name) { // Handle both success flag and direct data
+                // Step 2: Show real-time changes
+                showRealTimeChanges(data);
+
+                // Step 3: Auto-save after showing changes
+                setTimeout(() => {
+                    saveLocationChanges(editRequest);
+                }, 3500); // Wait for animations to complete
+            } else {
+                showNotification('Failed to generate preview: ' + (data.error || 'Unknown error'), 'danger');
+                editBtn.disabled = false;
+                editBtn.innerHTML = originalBtnText;
+                updateStatus.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to generate preview. Please try again.', 'danger');
+            editBtn.disabled = false;
+            editBtn.innerHTML = originalBtnText;
+            updateStatus.style.display = 'none';
+        });
+
+        // Disable edit button during processing
+        editBtn.disabled = true;
+        editBtn.innerHTML = '<i class="fas fa-magic fa-spin me-1"></i>AI is working...';
+        updateStatus.style.display = 'inline-block';
+    }
+
+    function showRealTimeChanges(newData) {
+        updateStatus.innerHTML = '<i class="fas fa-magic me-1"></i>Applying changes...';
+        updateStatus.className = 'badge bg-success ms-2';
+
+        const updates = [
+            { field: 'name', delay: 500 },
+            { field: 'type', delay: 800 },
+            { field: 'climate', delay: 1100 },
+            { field: 'description', delay: 1400 },
+            { field: 'geography', delay: 1700 },
+            { field: 'culture', delay: 2200 },
+            { field: 'history', delay: 2700 },
+            { field: 'economy', delay: 3000 },
+            { field: 'notable_features', delay: 3300 },
+            { field: 'tags', delay: 3600 }
+        ];
+
+        updates.forEach(update => {
+            setTimeout(() => updateLocationField(update.field, newData[update.field]), update.delay);
+        });
+    }
+
+    function updateLocationField(fieldName, newValue) {
+        const element = locElements[fieldName];
+        if (!element || !newValue) return;
+
+        // Store original content for comparison
+        const originalContent = element.textContent || element.innerHTML;
+
+        if (fieldName === 'tags') {
+            // Handle tags specially
+            element.innerHTML = '';
+            if (Array.isArray(newValue)) {
+                newValue.forEach(tag => {
+                    const span = document.createElement('span');
+                    span.className = 'badge bg-warning text-dark me-1 mb-1 new-content-highlight';
+                    span.textContent = tag;
+                    element.appendChild(span);
+                });
+            }
+        } else {
+            // For text fields, highlight new/changed words
+            if (originalContent !== newValue) {
+                const highlightedText = highlightTextChanges(originalContent, newValue);
+                element.innerHTML = highlightedText;
+            }
+        }
+
+        // Add field-level highlight
+        highlightField(fieldName);
+    }
+
+    function saveLocationChanges(editRequest) {
+        updateStatus.innerHTML = '<i class="fas fa-save me-1"></i>Saving changes...';
+
+        // Include current tags in the save request
+        const currentTags = document.getElementById('location_tags').value.trim();
+        let formData = 'edit_request=' + encodeURIComponent(editRequest);
+        if (currentTags) {
+            formData += '&location_tags=' + encodeURIComponent(currentTags);
+        }
+
+        fetch(`/api/locations/{{ location.id }}/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Success - show completion message
+                updateStatus.innerHTML = '<i class="fas fa-check me-1"></i>Location updated!';
+                updateStatus.className = 'badge bg-success ms-2';
+
+                // Show success message
+                showEditSuccess('Location updated successfully!');
+
+                // Clear the edit request
+                document.getElementById('edit_request').value = '';
+            } else {
+                throw new Error(data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to save changes. Please try again.', 'danger');
+            // Reset UI
+            editBtn.disabled = false;
+            editBtn.innerHTML = originalBtnText;
+            updateStatus.style.display = 'none';
+        });
+    }
+
+
+    function highlightField(fieldName) {
+        const element = locElements[fieldName];
+        if (element) {
+            // Add highlight effect
+            element.style.transition = 'all 0.3s ease';
+            element.style.backgroundColor = '#fff3cd';
+            element.style.borderRadius = '4px';
+            element.style.padding = '8px';
+
+            // Remove highlight after a delay
+            setTimeout(() => {
+                element.style.backgroundColor = '';
+            }, 2000);
+        }
+    }
+
+    function highlightTextChanges(originalText, newText) {
+        if (!originalText || !newText) return newText;
+
+        // Simple word-based comparison
+        const originalWords = originalText.split(/(\s+)/);
+        const newWords = newText.split(/(\s+)/);
+
+        let result = '';
+        let i = 0, j = 0;
+
+        while (i < originalWords.length && j < newWords.length) {
+            if (originalWords[i] === newWords[j]) {
+                result += newWords[j];
+                i++;
+                j++;
+            } else {
+                // Find next matching word
+                let found = false;
+                for (let k = j + 1; k < Math.min(j + 10, newWords.length); k++) {
+                    if (originalWords[i] === newWords[k]) {
+                        // Add highlighted new words
+                        for (let l = j; l < k; l++) {
+                            result += `<span class="new-content-highlight">${newWords[l]}</span>`;
+                        }
+                        result += newWords[k];
+                        i++;
+                        j = k + 1;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    // Add as new content
+                    result += `<span class="new-content-highlight">${newWords[j]}</span>`;
+                    j++;
+                }
+            }
+        }
+
+        // Add any remaining new words
+        while (j < newWords.length) {
+            result += `<span class="new-content-highlight">${newWords[j]}</span>`;
+            j++;
+        }
+
+        return result;
+    }
+
+    // Auto-resize textarea
+    const textarea = document.getElementById('edit_request');
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+
+    // Initial textarea resize
+    textarea.style.height = textarea.scrollHeight + 'px';
+
+    // Load AI suggestions
+    const loadSuggestionsBtn = document.getElementById('loadSuggestionsBtn');
+    if (loadSuggestionsBtn) {
+        loadSuggestionsBtn.addEventListener('click', function() {
+            loadAISuggestions();
+        });
+    }
+});
+
+function loadAISuggestions() {
+    const btn = document.getElementById('loadSuggestionsBtn');
+    const container = document.getElementById('suggestionsContainer');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+
+    fetch(`{{ url_for('api_get_location_suggestions', location_id=location.id) }}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.suggestions && data.suggestions.length > 0) {
+            let html = '<div class="row">';
+            data.suggestions.forEach((suggestion, index) => {
+                html += `
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm w-100 text-start" onclick="useSuggestion('${suggestion.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-lightbulb me-2"></i>${suggestion}
+                        </button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="text-muted text-center">No suggestions available at the moment.</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        container.innerHTML = '<p class="text-danger text-center">Failed to load suggestions. Please try again.</p>';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download me-1"></i>Load Suggestions';
+    });
+}
+
+function showEditSuccess(message) {
+    // Update status to show success
+    updateStatus.innerHTML = `<i class="fas fa-check me-1"></i>${message}`;
+    updateStatus.className = 'badge bg-success ms-2';
+    updateStatus.style.display = 'inline-block';
+
+    // Update button to show completion
+    editBtn.disabled = false;
+    editBtn.innerHTML = '<i class="fas fa-check me-1"></i>Edit Complete!';
+    editBtn.className = 'btn btn-success btn-lg';
+
+    // Update view result button
+    const viewResultBtn = document.getElementById('viewResultBtn');
+    if (viewResultBtn) {
+        viewResultBtn.classList.remove('btn-outline-success');
+        viewResultBtn.classList.add('btn-success');
+        viewResultBtn.innerHTML = '<i class="fas fa-eye me-1"></i>View Updated Location';
+    }
+
+    // Show "Make Another Edit" button
+    const makeAnotherEditBtn = document.getElementById('makeAnotherEditBtn');
+    if (makeAnotherEditBtn) {
+        makeAnotherEditBtn.style.display = 'inline-block';
+        makeAnotherEditBtn.onclick = function() {
+            // Clear highlights and reset for new edit
+            clearPreviousHighlights();
+            updateStatus.style.display = 'none';
+            viewResultBtn.classList.remove('btn-success');
+            viewResultBtn.classList.add('btn-outline-success');
+            viewResultBtn.innerHTML = '<i class="fas fa-eye me-1"></i>View Final Result';
+            editBtn.className = 'btn btn-primary btn-lg';
+            editBtn.innerHTML = originalBtnText;
+            makeAnotherEditBtn.style.display = 'none';
+        };
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 400px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function useSuggestion(suggestion) {
+    const textarea = document.getElementById('edit_request');
+    textarea.value = suggestion;
+    textarea.focus();
+
+    // Trigger auto-resize
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+
+    // Scroll to textarea
+    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
+
+<style>
+/* Custom styles for the editing interface */
+.location-avatar {
+    flex-shrink: 0;
+}
+
+.new-content-highlight {
+    color: #1976d2;
+    font-weight: 500;
+}
+
+#loc-description, #loc-geography, #loc-culture, #loc-history, #loc-economy, #loc-notable-features {
+    min-height: 60px;
+    line-height: 1.6;
+    transition: all 0.3s ease;
+}
+
+.ai-highlight {
+    color: #0066cc !important;
+    transition: color 0.3s ease;
+}
+</style>
+{% endblock %}

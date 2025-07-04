@@ -1,0 +1,950 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit {{ lore.title }} - {{ novel.title }} - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}">Lore</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_lore_detail', novel_id=novel.id, lore_id=lore.id) }}">{{ lore.title }}</a></li>
+                <li class="breadcrumb-item active">Edit</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-robot me-2"></i>AI Lore Editor</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - {{ lore.title }}</p>
+            </div>
+            <a href="{{ url_for('novel_lore_detail', novel_id=novel.id, lore_id=lore.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Lore
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- AI Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        {% if ai_available %}
+            <div class="alert alert-success" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>AI Editor Ready!</strong> Make changes and watch your lore entry update in real-time.
+            </div>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>AI Unavailable:</strong> Lore editing is disabled. Check your OpenRouter API configuration.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Main Editing Interface -->
+<div class="row">
+    <!-- Lore Profile (Left Side) -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-scroll me-2"></i>Lore Entry
+                    <span class="badge bg-info ms-2" id="updateStatus" style="display: none;">Updating...</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Lore Header -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="lore-icon me-3">
+                                <i class="fas fa-scroll fa-3x text-muted"></i>
+                            </div>
+                            <div>
+                                <h2 class="mb-1" id="lore-title">{{ lore.title }}</h2>
+                                <div class="mb-2">
+                                    {% if lore.category %}
+                                        <span class="badge bg-{% if lore.category == 'History' %}primary{% elif lore.category == 'Culture' %}info{% elif lore.category == 'Magic' %}success{% elif lore.category == 'Technology' %}warning{% elif lore.category == 'Geography' %}secondary{% elif lore.category == 'Politics' %}danger{% else %}dark{% endif %} me-2" id="lore-category">
+                                            {{ lore.category }}
+                                        </span>
+                                    {% endif %}
+                                    {% if lore.ai_generated %}
+                                        <span class="badge bg-success ms-1" title="AI Generated">
+                                            <i class="fas fa-robot"></i> AI Generated
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lore Details -->
+                <div class="row">
+                    <div class="col-12">
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-2">
+                                <i class="fas fa-info-circle me-2"></i>Description
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="lore-description">
+                                {{ lore.description or 'No description provided.' }}
+                            </div>
+                        </div>
+
+                        <!-- Details -->
+                        <div class="mb-4">
+                            <h6 class="text-success mb-2">
+                                <i class="fas fa-book me-2"></i>Details
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="lore-details">
+                                {{ lore.details|replace('\n', '<br>')|safe if lore.details else 'No details provided.' }}
+                            </div>
+                        </div>
+
+                        <!-- Significance -->
+                        <div class="mb-4">
+                            <h6 class="text-warning mb-2">
+                                <i class="fas fa-star me-2"></i>Significance
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="lore-significance">
+                                {{ lore.significance or 'No significance details provided.' }}
+                            </div>
+                        </div>
+
+                        <!-- Connections -->
+                        <div class="mb-4">
+                            <h6 class="text-info mb-2">
+                                <i class="fas fa-project-diagram me-2"></i>Connections
+                            </h6>
+                            <div class="p-3 bg-light rounded" id="lore-connections">
+                                {{ lore.connections or 'No connections specified.' }}
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="mb-4">
+                            <h6 class="text-secondary mb-2">
+                                <i class="fas fa-tags me-2"></i>Tags
+                            </h6>
+                            <div id="lore-tags">
+                                {% if lore.tags %}
+                                    {% for tag in lore.tags %}
+                                        <span class="badge bg-warning text-dark me-1 mb-1">{{ tag }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No tags assigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Controls (Right Side) -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-magic me-2"></i>AI Editor
+                    {% if ai_available %}
+                        <span class="badge bg-success ms-2">Ready</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="editForm">
+                    <!-- Quick Tags Editor -->
+                    <div class="mb-4">
+                        <label for="lore_tags" class="form-label">
+                            <i class="fas fa-tags me-1"></i>Quick Edit Tags
+                        </label>
+                        <input type="text" class="form-control" id="lore_tags" name="lore_tags"
+                               value="{{ lore.tags|join(', ') if lore.tags else '' }}"
+                               placeholder="magic, history, important">
+                        <div class="form-text">Comma-separated tags for organization</div>
+                    </div>
+
+                    <!-- AI Edit Request -->
+                    {% if ai_available %}
+                    <div class="mb-4">
+                        <label for="edit_request" class="form-label">
+                            <i class="fas fa-robot me-1"></i>AI Edit Request
+                        </label>
+                        <textarea class="form-control" id="edit_request" name="edit_request" rows="4"
+                                  placeholder="Tell me what you want to change about this lore entry..."></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            Example: "Add more details about how this affects the common people" or "Change the category to Culture and update the details accordingly"
+                        </div>
+                    </div>
+
+                    <!-- Speed Mode Toggle -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="fastMode">
+                            <label class="form-check-label" for="fastMode">
+                                <i class="fas fa-bolt me-1"></i>Fast Mode
+                            </label>
+                            <div class="form-text">Skip preview for faster editing</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-success" id="saveTagsBtn">
+                            <i class="fas fa-save me-1"></i>Save Tags Only
+                        </button>
+                        {% if ai_available %}
+                        <button type="submit" class="btn btn-primary btn-lg" id="editBtn">
+                            <i class="fas fa-magic me-1"></i>AI Update Lore
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-primary btn-lg" disabled>
+                            <i class="fas fa-ban me-1"></i>AI Unavailable
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+
+                <!-- Additional Action Buttons -->
+                <div class="mt-3 d-grid gap-2">
+                    <a href="{{ url_for('novel_lore_detail', novel_id=novel.id, lore_id=lore.id) }}" class="btn btn-outline-success" id="viewLoreResultBtn">
+                        <i class="fas fa-eye me-1"></i>View Final Result
+                    </a>
+                    <button type="button" class="btn btn-outline-info" id="makeAnotherLoreEditBtn" style="display: none;">
+                        <i class="fas fa-edit me-1"></i>Make Another Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Suggestions -->
+        {% if ai_available %}
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>AI Suggestions
+                </h6>
+                <button type="button" class="btn btn-light btn-sm" id="loadLoreSuggestionsBtn">
+                    <i class="fas fa-download me-1"></i>Load
+                </button>
+            </div>
+            <div class="card-body" id="loreSuggestionsContainer">
+                <p class="text-muted text-center small">
+                    <i class="fas fa-lightbulb fa-lg mb-2 d-block"></i>
+                    Click "Load" to get AI improvement ideas for this lore entry.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Loading Animation -->
+<div class="row mt-4" id="loadingSection" style="display: none;">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="spinner-border text-warning mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Updating Your Lore Entry...</h5>
+                <p class="text-muted">The AI is analyzing your request and updating the lore content. This may take a moment.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editBtn = document.getElementById('editBtn');
+    const updateStatus = document.getElementById('updateStatus');
+    const saveTagsBtn = document.getElementById('saveTagsBtn');
+
+    // Lore field elements for real-time updates
+    const loreElements = {
+        title: document.getElementById('lore-title'),
+        category: document.getElementById('lore-category'),
+        description: document.getElementById('lore-description'),
+        details: document.getElementById('lore-details'),
+        significance: document.getElementById('lore-significance'),
+        connections: document.getElementById('lore-connections'),
+        tags: document.getElementById('lore-tags')
+    };
+
+    // Handle suggestion clicks
+    document.querySelectorAll('.suggestion-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const suggestion = this.getAttribute('data-suggestion');
+            document.getElementById('edit_request').value = suggestion;
+
+            // Highlight the selected suggestion
+            document.querySelectorAll('.suggestion-btn').forEach(b => b.classList.remove('btn-info'));
+            document.querySelectorAll('.suggestion-btn').forEach(b => b.classList.add('btn-outline-info'));
+            this.classList.remove('btn-outline-info');
+            this.classList.add('btn-info');
+        });
+    });
+
+    // Handle tags-only saving
+    if (saveTagsBtn) {
+        saveTagsBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            saveTagsOnly();
+        });
+    }
+
+    // Handle form submission with real-time updates
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
+
+        const editRequest = document.getElementById('edit_request').value.trim();
+        if (!editRequest) {
+            alert('Please describe what you want to change about this lore entry.');
+            return;
+        }
+
+        startAIEditing(editRequest);
+    });
+
+    function saveTagsOnly() {
+        const tagsInput = document.getElementById('lore_tags').value.trim();
+        const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+
+        // Update UI
+        if (saveTagsBtn) {
+            saveTagsBtn.disabled = true;
+            saveTagsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+        }
+
+        // Send tags update to dedicated endpoint
+        fetch(`{{ url_for('novel_lore_edit_tags', novel_id=novel.id, lore_id=lore.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'lore_tags=' + encodeURIComponent(tagsInput)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update tags display
+                updateLoreField('tags', tags);
+                showNotification('Tags updated successfully!', 'success');
+            } else {
+                showNotification('Failed to update tags: ' + (data.error || 'Unknown error'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to update tags. Please try again.', 'danger');
+        })
+        .finally(() => {
+            saveTagsBtn.disabled = false;
+            saveTagsBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Tags Only';
+        });
+    }
+
+    function startAIEditing(editRequest) {
+        // Clear previous highlights before starting new edit
+        clearPreviousHighlights();
+
+        // Immediately disable button and show loading state
+        editBtn.disabled = true;
+        const originalBtnText = editBtn.innerHTML;
+        editBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+
+        // Show status indicator
+        updateStatus.style.display = 'inline-block';
+        updateStatus.className = 'badge bg-primary ms-2';
+
+        // Check if fast mode is enabled
+        const fastMode = document.getElementById('fastMode').checked;
+
+        if (fastMode) {
+            // Fast mode: direct edit without preview
+            performFastLoreEdit(editRequest);
+        } else {
+            // Normal mode: preview then save
+            const currentTags = document.getElementById('lore_tags').value.trim();
+            performRealTimeUpdate(editRequest, currentTags);
+        }
+    }
+
+    function performFastLoreEdit(editRequest) {
+        // Update UI to show fast editing mode (button already disabled)
+        editBtn.innerHTML = '<i class="fas fa-bolt fa-spin me-1"></i>Fast editing...';
+        updateStatus.innerHTML = '<i class="fas fa-bolt me-1"></i>Fast mode - editing directly...';
+        updateStatus.className = 'badge bg-warning ms-2';
+
+        // Include current tags in the request
+        const currentTags = document.getElementById('lore_tags').value.trim();
+
+        const requestData = { edit_request: editRequest };
+        if (currentTags) {
+            requestData.current_tags = currentTags;
+        }
+
+        fetch(window.location.href + '/fast', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateStatus.innerHTML = '<i class="fas fa-check me-1"></i>Lore updated!';
+                updateStatus.className = 'badge bg-success ms-2';
+
+                // Update the lore display with new data
+                updateLoreDisplay(data.lore);
+
+                // Show success message and keep user on page to see highlights
+                showLoreEditSuccess('Lore updated successfully! You can see the changes highlighted in blue above.');
+            } else {
+                throw new Error(data.error || 'Fast edit failed');
+            }
+        })
+        .catch(error => {
+            console.error('Fast lore edit error:', error);
+            updateStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Fast edit failed';
+            updateStatus.className = 'badge bg-danger ms-2';
+            editBtn.disabled = false;
+            editBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Apply AI Changes';
+        });
+    }
+
+    function updateLoreDisplay(loreData) {
+        // Update lore fields with new data and highlight changes
+        Object.keys(loreData).forEach(field => {
+            if (loreElements[field] && loreData[field]) {
+                updateLoreField(field, loreData[field]);
+            }
+        });
+    }
+
+    function clearPreviousHighlights() {
+        // Remove all previous highlights from all lore fields
+        Object.values(loreElements).forEach(element => {
+            if (element) {
+                element.querySelectorAll('.new-content-highlight').forEach(highlightedSpan => {
+                    // Replace highlighted span with plain text
+                    const parent = highlightedSpan.parentNode;
+                    parent.replaceChild(document.createTextNode(highlightedSpan.textContent), highlightedSpan);
+                    parent.normalize(); // Merge adjacent text nodes
+                });
+
+                // Also remove highlight class from badges (for categories/tags)
+                element.classList.remove('new-content-highlight');
+            }
+        });
+    }
+
+    function performRealTimeUpdate(editRequest, currentTags) {
+        // Step 1: Get AI preview of changes (button already disabled)
+        updateStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>AI is generating changes...';
+        updateStatus.className = 'badge bg-info ms-2';
+
+        const requestData = { edit_request: editRequest };
+        if (currentTags) {
+            requestData.current_tags = currentTags;
+        }
+
+        fetch(window.location.href + '/preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(previewData => {
+            if (previewData.error) {
+                throw new Error(previewData.error);
+            }
+
+            // Step 2: Show real-time updates
+            showRealTimeChanges(previewData);
+
+            // Step 3: Save the changes
+            setTimeout(() => {
+                saveLoreChanges(editRequest);
+            }, 4000);
+        })
+        .catch(error => {
+            console.error('Preview error:', error);
+            updateStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Preview failed';
+            updateStatus.className = 'badge bg-danger ms-2';
+            editBtn.disabled = false;
+            editBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Apply AI Changes';
+        });
+    }
+
+    function showRealTimeChanges(newData) {
+        updateStatus.innerHTML = '<i class="fas fa-magic me-1"></i>Applying changes...';
+        updateStatus.className = 'badge bg-success ms-2';
+
+        const updates = [
+            { field: 'title', delay: 500 },
+            { field: 'category', delay: 800 },
+            { field: 'description', delay: 1200 },
+            { field: 'details', delay: 1800 },
+            { field: 'significance', delay: 2500 },
+            { field: 'connections', delay: 3200 },
+            { field: 'tags', delay: 3800 }
+        ];
+
+        updates.forEach(update => {
+            setTimeout(() => {
+                updateLoreField(update.field, newData[update.field]);
+            }, update.delay);
+        });
+    }
+
+    function updateLoreField(fieldName, newValue) {
+        const element = loreElements[fieldName];
+        if (!element || !newValue) return;
+
+        // Store original content for comparison
+        const originalContent = element.textContent || element.innerHTML;
+
+        // Highlight the field
+        highlightField(fieldName);
+
+        // Update the content based on field type
+        if (fieldName === 'tags') {
+            if (Array.isArray(newValue)) {
+                // For tags, highlight new tags
+                const originalTags = Array.from(element.querySelectorAll('.badge')).map(badge => badge.textContent.trim());
+                const newTags = newValue;
+
+                element.innerHTML = newValue.map(tag => {
+                    const isNew = !originalTags.includes(tag);
+                    const highlightClass = isNew ? 'new-content-highlight' : '';
+                    return `<span class="badge bg-warning text-dark me-1 mb-1 ${highlightClass}">${tag}</span>`;
+                }).join('');
+            }
+        } else if (fieldName === 'category') {
+            const categoryColors = {
+                'History': 'primary',
+                'Culture': 'info',
+                'Magic': 'success',
+                'Technology': 'warning',
+                'Geography': 'secondary',
+                'Politics': 'danger',
+                'Religion': 'dark',
+                'Economics': 'info',
+                'Legends': 'primary'
+            };
+            const colorClass = categoryColors[newValue] || 'dark';
+
+            // Check if category changed
+            const originalCategory = originalContent.trim();
+            const newCategory = newValue;
+
+            element.className = `badge bg-${colorClass} ms-2`;
+
+            if (originalCategory !== newCategory) {
+                element.classList.add('new-content-highlight');
+            }
+
+            element.textContent = newValue;
+        } else if (fieldName === 'details') {
+            // Animate text change for longer content with highlighting
+            element.style.opacity = '0.5';
+            setTimeout(() => {
+                const highlightedContent = highlightTextChanges(originalContent, newValue);
+                element.innerHTML = highlightedContent.replace(/\n/g, '<br>');
+                element.style.opacity = '1';
+            }, 300);
+        } else {
+            // Animate text change with word-level highlighting
+            element.style.opacity = '0.5';
+            setTimeout(() => {
+                if (fieldName === 'title') {
+                    const highlightedContent = highlightTextChanges(originalContent, newValue);
+                    element.innerHTML = highlightedContent;
+                } else {
+                    const highlightedContent = highlightTextChanges(originalContent, newValue);
+                    element.innerHTML = highlightedContent.replace(/\n/g, '<br>');
+                }
+                element.style.opacity = '1';
+            }, 200);
+        }
+    }
+
+    function saveLoreChanges(editRequest) {
+        updateStatus.innerHTML = '<i class="fas fa-save me-1"></i>Saving changes...';
+
+        // Include current tags in the save request
+        const currentTags = document.getElementById('lore_tags').value.trim();
+        let formData = 'edit_request=' + encodeURIComponent(editRequest);
+        if (currentTags) {
+            formData += '&lore_tags=' + encodeURIComponent(currentTags);
+        }
+
+        // Send the actual save request to the API endpoint
+        fetch(`/api/lore/{{ lore.id }}/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Success - show completion message
+                updateStatus.innerHTML = '<i class="fas fa-check me-1"></i>Lore updated!';
+                updateStatus.className = 'badge bg-success ms-2';
+
+                // Show success message and keep user on page to see highlights
+                showLoreEditSuccess('Lore updated successfully! You can see the changes highlighted in blue above.');
+
+                // Clear the edit request
+                document.getElementById('edit_request').value = '';
+            } else {
+                throw new Error(data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            updateStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Save failed';
+            updateStatus.className = 'badge bg-danger ms-2';
+        });
+    }
+
+    function highlightField(fieldName) {
+        const element = loreElements[fieldName];
+        if (element) {
+            // Add highlight effect
+            element.style.transition = 'all 0.3s ease';
+            element.style.backgroundColor = '#fff3cd';
+            element.style.border = '2px solid #ffc107';
+            element.style.borderRadius = '5px';
+            element.style.padding = '8px';
+
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+                element.style.backgroundColor = '';
+                element.style.border = '';
+                element.style.padding = '';
+            }, 2000);
+        }
+    }
+
+    function highlightTextChanges(originalText, newText) {
+        if (!originalText || !newText) return newText;
+
+        // Simple word-based comparison
+        const originalWords = originalText.split(/(\s+)/);
+        const newWords = newText.split(/(\s+)/);
+
+        // Find the longest common subsequence to identify changes
+        const result = [];
+        let originalIndex = 0;
+        let newIndex = 0;
+
+        while (newIndex < newWords.length) {
+            const newWord = newWords[newIndex];
+
+            // Check if this word exists in the original text from current position
+            let foundInOriginal = false;
+            for (let i = originalIndex; i < originalWords.length; i++) {
+                if (originalWords[i] === newWord) {
+                    foundInOriginal = true;
+                    originalIndex = i + 1;
+                    break;
+                }
+            }
+
+            if (foundInOriginal || /^\s+$/.test(newWord)) {
+                // Word exists in original or is whitespace, don't highlight
+                result.push(newWord);
+            } else {
+                // New or changed word, highlight it
+                if (/^\s+$/.test(newWord)) {
+                    result.push(newWord);
+                } else {
+                    result.push(`<span class="new-content-highlight">${newWord}</span>`);
+                }
+            }
+
+            newIndex++;
+        }
+
+        return result.join('');
+    }
+
+    // Auto-resize textarea
+    const textarea = document.getElementById('edit_request');
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+
+        // Initial textarea resize
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    // Load lore suggestions on demand
+    const loadLoreSuggestionsBtn = document.getElementById('loadLoreSuggestionsBtn');
+    if (loadLoreSuggestionsBtn) {
+        loadLoreSuggestionsBtn.addEventListener('click', function() {
+            loadLoreSuggestions();
+        });
+    }
+});
+
+function useSuggestion(suggestion) {
+    const textarea = document.getElementById('edit_request');
+    textarea.value = suggestion;
+    textarea.focus();
+
+    // Trigger auto-resize
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+
+    // Scroll to form
+    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function loadLoreSuggestions() {
+    const btn = document.getElementById('loadLoreSuggestionsBtn');
+    const container = document.getElementById('loreSuggestionsContainer');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+
+    fetch(window.location.href + '/suggestions')
+    .then(response => response.json())
+    .then(data => {
+        if (data.suggestions && data.suggestions.length > 0) {
+            container.innerHTML = `
+                <p class="small text-muted mb-3">Click any suggestion to use it as your edit request:</p>
+                ${data.suggestions.map(suggestion => `
+                    <button type="button" class="btn btn-outline-info btn-sm mb-2 w-100 text-start suggestion-btn"
+                            onclick="useSuggestion('${suggestion.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-arrow-right me-1"></i>${suggestion}
+                    </button>
+                `).join('')}
+            `;
+            btn.style.display = 'none';
+        } else {
+            container.innerHTML = '<p class="text-muted text-center small">No suggestions available at this time.</p>';
+            btn.innerHTML = '<i class="fas fa-download me-1"></i>Load';
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Lore suggestions loading error:', error);
+        container.innerHTML = '<p class="text-danger text-center small">Failed to load suggestions. Please try again.</p>';
+        btn.innerHTML = '<i class="fas fa-download me-1"></i>Load';
+        btn.disabled = false;
+    });
+}
+
+function showLoreEditSuccess(message) {
+    // Update status to show success
+    updateStatus.innerHTML = `<i class="fas fa-check me-1"></i>${message}`;
+    updateStatus.className = 'badge bg-success ms-2';
+    updateStatus.style.display = 'inline-block';
+
+    // Reset edit button
+    editBtn.disabled = false;
+    editBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Apply AI Changes';
+
+    // Clear the edit request textarea
+    const textarea = document.getElementById('edit_request');
+    textarea.value = '';
+    textarea.style.height = 'auto';
+
+    // Show helpful buttons
+    const viewResultBtn = document.getElementById('viewLoreResultBtn');
+    const makeAnotherEditBtn = document.getElementById('makeAnotherLoreEditBtn');
+
+    if (viewResultBtn) {
+        viewResultBtn.classList.remove('btn-outline-success');
+        viewResultBtn.classList.add('btn-success');
+        viewResultBtn.innerHTML = '<i class="fas fa-eye me-1"></i>View Final Result (Recommended)';
+    }
+
+    if (makeAnotherEditBtn) {
+        makeAnotherEditBtn.style.display = 'inline-block';
+        makeAnotherEditBtn.onclick = function() {
+            // Clear highlights and reset for new edit
+            clearPreviousHighlights();
+            updateStatus.style.display = 'none';
+            viewResultBtn.classList.remove('btn-success');
+            viewResultBtn.classList.add('btn-outline-success');
+            viewResultBtn.innerHTML = '<i class="fas fa-eye me-1"></i>View Final Result';
+            makeAnotherEditBtn.style.display = 'none';
+            textarea.focus();
+        };
+    }
+
+    // Add a subtle notification
+    showLoreNotification('✨ Changes highlighted in blue! Click "View Final Result" when ready.', 'success');
+}
+
+function showLoreNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 400px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+/* Custom styles for the lore editing interface */
+.card-body {
+    transition: opacity 0.3s ease;
+}
+
+#lore-title {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+#lore-description, #lore-details, #lore-significance, #lore-connections {
+    min-height: 60px;
+    line-height: 1.6;
+    transition: all 0.3s ease;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+}
+
+#lore-tags .badge {
+    font-size: 0.85em;
+    transition: all 0.3s ease;
+}
+
+.suggestion-btn {
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.suggestion-btn:hover {
+    transform: translateX(5px);
+}
+
+/* Highlight animation for field updates */
+@keyframes fieldUpdate {
+    0% {
+        background-color: #fff3cd;
+        transform: scale(1.02);
+    }
+    50% {
+        background-color: #ffeaa7;
+        transform: scale(1.05);
+    }
+    100% {
+        background-color: #fff3cd;
+        transform: scale(1.02);
+    }
+}
+
+.field-updating {
+    animation: fieldUpdate 0.6s ease-in-out;
+}
+
+/* Loading states */
+.loading-overlay {
+    position: relative;
+}
+
+.loading-overlay::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+}
+
+/* Category badge animations */
+.badge {
+    transition: all 0.3s ease;
+}
+
+.badge.updating {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Form enhancements */
+#edit_request {
+    resize: vertical;
+    min-height: 100px;
+    transition: all 0.3s ease;
+}
+
+#edit_request:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+/* New content highlighting - simple blue text color */
+.new-content-highlight {
+    color: #2563eb !important;
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #lore-description, #lore-details, #lore-significance, #lore-connections {
+        min-height: 40px;
+        padding: 8px;
+    }
+
+    .suggestion-btn {
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

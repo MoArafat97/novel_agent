@@ -1,0 +1,135 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ novel.title }} - Characters - Lazywriter{% endblock %}
+
+{% block content %}
+<!-- Novel Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Novels</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_detail', novel_id=novel.id) }}">{{ novel.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}">Worldbuilding</a></li>
+                <li class="breadcrumb-item active">Characters</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-users me-2"></i>Characters</h1>
+                <p class="text-muted mb-0">{{ novel.title }} - {{ characters|length }} character{{ 's' if characters|length != 1 else '' }}</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('novel_create_character', novel_id=novel.id) }}" class="btn btn-success">
+                    <i class="fas fa-plus me-1"></i>Add Character
+                </a>
+                <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Worldbuilding
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Characters List -->
+{% if characters %}
+    <div class="row">
+        {% for character in characters %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {{ character.name }}
+                            {% if character.role %}
+                                <span class="badge bg-{% if character.role == 'protagonist' %}primary{% elif character.role == 'secondary protagonist' %}info{% elif character.role == 'villain' %}danger{% elif character.role == 'antagonist' %}warning{% else %}secondary{% endif %} ms-2">
+                                    {{ character.role.title() }}
+                                </span>
+                            {% endif %}
+                        </h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ character.occupation }}</h6>
+                        <p class="card-text">{{ character.description[:150] }}{% if character.description|length > 150 %}...{% endif %}</p>
+                        
+                        {% if character.age %}
+                            <p class="small text-muted mb-1"><strong>Age:</strong> {{ character.age }}</p>
+                        {% endif %}
+                        
+                        {% if character.tags %}
+                            <div class="mb-2">
+                                {% for tag in character.tags[:3] %}
+                                    <span class="badge bg-warning text-dark me-1">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100">
+                            <a href="{{ url_for('novel_character_detail', novel_id=novel.id, character_id=character.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <a href="{{ url_for('novel_edit_character', novel_id=novel.id, character_id=character.id) }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('novel_delete_character', novel_id=novel.id, character_id=character.id) }}" class="d-inline" 
+                                  onsubmit="return confirm('Are you sure you want to delete {{ character.name }}?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <!-- No Characters -->
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No characters yet</h4>
+                <p class="text-muted">Start building your world by creating your first character</p>
+                <a href="{{ url_for('novel_create_character', novel_id=novel.id) }}" class="btn btn-success">
+                    <i class="fas fa-plus me-1"></i>Create First Character
+                </a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Character Actions:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_create_character', novel_id=novel.id) }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-user-plus me-2"></i>Add New Character
+                            </a>
+                            <a href="{{ url_for('novel_worldbuilding_search', novel_id=novel.id) }}?types=characters" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search me-2"></i>Search Characters
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Other Worldbuilding:</h6>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <a href="{{ url_for('novel_worldbuilding_locations', novel_id=novel.id) }}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-map-marker-alt me-2"></i>View Locations
+                            </a>
+                            <a href="{{ url_for('novel_worldbuilding_lore', novel_id=novel.id) }}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-scroll me-2"></i>View Lore
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
