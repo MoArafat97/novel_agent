@@ -72,7 +72,10 @@ class CrossReferenceManager {
 
         } catch (error) {
             console.error('Cross-reference analysis error:', error);
-            this.showError('Failed to perform cross-reference analysis');
+            const message = window.apiUtils ?
+                window.apiUtils.handleError(error, 'cross-reference analysis') :
+                'Failed to perform cross-reference analysis';
+            this.showError(message);
         } finally {
             this.setButtonLoading(button, false);
         }
@@ -661,7 +664,10 @@ class CrossReferenceManager {
 
         } catch (error) {
             console.error('Apply updates error:', error);
-            this.showError('Failed to apply updates');
+            const message = window.apiUtils ?
+                window.apiUtils.handleError(error, 'applying updates') :
+                'Failed to apply updates';
+            this.showError(message);
         } finally {
             applyBtn.disabled = false;
             applyBtn.innerHTML = originalText;

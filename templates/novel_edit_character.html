@@ -150,15 +150,20 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" id="editForm">
+                <form method="POST" id="editForm" class="ai-edit-form">
                     <!-- Quick Tags Editor -->
                     <div class="mb-4">
                         <label for="character_tags" class="form-label">
                             <i class="fas fa-tags me-1"></i>Quick Edit Tags
                         </label>
-                        <input type="text" class="form-control" id="character_tags" name="character_tags"
-                               value="{{ character.tags|join(', ') if character.tags else '' }}"
-                               placeholder="warrior, brave, magical, leader">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="character_tags" name="character_tags"
+                                   value="{{ character.tags|join(', ') if character.tags else '' }}"
+                                   placeholder="warrior, brave, magical, leader">
+                            <button type="button" class="btn btn-outline-primary save-tags-btn" id="saveTagsBtn">
+                                <i class="fas fa-save me-1"></i>Save Tags
+                            </button>
+                        </div>
                         <div class="form-text">
                             <i class="fas fa-info-circle me-1"></i>Separate tags with commas. Include occupation for better search.
                         </div>
