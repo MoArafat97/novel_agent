@@ -212,39 +212,167 @@ class EntityDetectionUtils:
         return ""
     
     def _classify_entity_type(self, name: str, context: str) -> str:
-        """Classify entity type based on name and context."""
+        """Classify entity type based on name and context with improved logic."""
         context_lower = context.lower()
         name_lower = name.lower()
-        
-        # Check for character indicators
-        character_score = sum(1 for indicator in self.character_indicators 
-                            if indicator in context_lower or indicator in name_lower)
-        
-        # Check for location indicators
-        location_score = sum(1 for indicator in self.location_indicators 
-                           if indicator in context_lower or indicator in name_lower)
-        
+
+        # Skip obvious non-entities
+        if self._is_obvious_non_entity(name, context):
+            return None
+
+        # Check for strong location indicators first
+        location_score = self._calculate_location_score(name_lower, context_lower)
+
+        # Check for strong character indicators
+        character_score = self._calculate_character_score(name_lower, context_lower)
+
         # Check for lore indicators
-        lore_score = sum(1 for indicator in self.lore_indicators 
-                        if indicator in context_lower)
-        
-        # Determine type based on highest score
+        lore_score = self._calculate_lore_score(name_lower, context_lower)
+
+        # Determine type based on highest score with minimum threshold
         scores = {
             'characters': character_score,
             'locations': location_score,
             'lore': lore_score
         }
-        
+
         max_score = max(scores.values())
-        if max_score > 0:
+        if max_score >= 2:  # Require minimum confidence
             return max(scores, key=scores.get)
-        
-        # Default classification based on capitalization patterns
-        if re.match(r'^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*$', name):
-            return 'characters'  # Proper names default to characters
-        
+
+        # Enhanced default classification
+        if self._looks_like_person_name(name):
+            return 'characters'
+        elif self._looks_like_place_name(name, context):
+            return 'locations'
+
         return None
-    
+
+    def _is_obvious_non_entity(self, name: str, context: str) -> bool:
+        """Check if this is obviously not an entity."""
+        name_lower = name.lower().strip()
+
+        # Skip common words and pronouns
+        common_words = {'he', 'she', 'they', 'them', 'him', 'her', 'his', 'hers', 'their', 'theirs',
+                       'the', 'and', 'or', 'but', 'with', 'from', 'to', 'of', 'in', 'on', 'at',
+                       'is', 'was', 'are', 'were', 'be', 'been', 'being', 'have', 'has', 'had'}
+
+        if name_lower in common_words:
+            return True
+
+        # Skip very short names (less than 2 chars)
+        if len(name.strip()) < 2:
+            return True
+
+        # Skip names that are mostly lowercase (likely not proper nouns)
+        if not re.match(r'^[A-Z]', name):
+            return True
+
+        # Skip full sentences or very long phrases
+        if len(name.split()) > 4:
+            return True
+
+        return False
+
+    def _calculate_location_score(self, name_lower: str, context_lower: str) -> int:
+        """Calculate location classification score."""
+        score = 0
+
+        # Strong location indicators in context
+        location_context_words = ['lives in', 'located in', 'situated in', 'built in', 'from',
+                                 'traveled to', 'visited', 'journey to', 'went to', 'arrived at']
+        for phrase in location_context_words:
+            if phrase in context_lower:
+                score += 3
+
+        # Location type indicators in name
+        for indicator in self.location_indicators:
+            if indicator in name_lower:
+                score += 2
+            elif indicator in context_lower:
+                score += 1
+
+        # Spatial prepositions
+        spatial_preps = ['in', 'at', 'near', 'from', 'to', 'through', 'across']
+        for prep in spatial_preps:
+            if f' {prep} ' in context_lower:
+                score += 1
+
+        return score
+
+    def _calculate_character_score(self, name_lower: str, context_lower: str) -> int:
+        """Calculate character classification score."""
+        score = 0
+
+        # Strong character indicators
+        character_actions = ['said', 'spoke', 'told', 'asked', 'replied', 'thought', 'felt',
+                           'walked', 'ran', 'smiled', 'laughed', 'cried', 'looked', 'saw']
+        for action in character_actions:
+            if action in context_lower:
+                score += 3
+
+        # Personal pronouns nearby
+        pronouns = ['he', 'she', 'they', 'him', 'her', 'them', 'his', 'hers', 'their']
+        for pronoun in pronouns:
+            if f' {pronoun} ' in context_lower:
+                score += 2
+
+        # Character titles and roles
+        for indicator in self.character_indicators:
+            if indicator in name_lower:
+                score += 2
+            elif indicator in context_lower:
+                score += 1
+
+        return score
+
+    def _calculate_lore_score(self, name_lower: str, context_lower: str) -> int:
+        """Calculate lore classification score."""
+        score = 0
+
+        # Lore indicators
+        for indicator in self.lore_indicators:
+            if indicator in name_lower:
+                score += 2
+            elif indicator in context_lower:
+                score += 1
+
+        # Abstract concept indicators
+        abstract_words = ['concept', 'idea', 'theory', 'belief', 'tradition', 'custom']
+        for word in abstract_words:
+            if word in context_lower:
+                score += 2
+
+        return score
+
+    def _looks_like_person_name(self, name: str) -> bool:
+        """Check if name looks like a person's name."""
+        # Two capitalized words (First Last)
+        if re.match(r'^[A-Z][a-z]+\s+[A-Z][a-z]+$', name):
+            return True
+
+        # Single capitalized name
+        if re.match(r'^[A-Z][a-z]+$', name) and len(name) >= 3:
+            return True
+
+        return False
+
+    def _looks_like_place_name(self, name: str, context: str) -> bool:
+        """Check if name looks like a place name."""
+        # Contains location words
+        location_words = ['village', 'city', 'town', 'castle', 'forest', 'mountain', 'lake', 'academy']
+        for word in location_words:
+            if word.lower() in name.lower():
+                return True
+
+        # Spatial context
+        spatial_context = ['in', 'at', 'from', 'to', 'near', 'located', 'situated']
+        for word in spatial_context:
+            if word in context.lower():
+                return True
+
+        return False
+
     def _is_existing_entity(self, name: str, entity_type: str, existing_entities: Dict[str, List[Dict[str, Any]]]) -> bool:
         """Check if entity already exists."""
         entities = existing_entities.get(entity_type, [])

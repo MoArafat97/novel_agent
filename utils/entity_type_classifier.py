@@ -776,10 +776,21 @@ Classify as characters/locations/lore/null with JSON response."""
             else:
                 recommendation = 'reject'
 
+            # Ensure reasoning is always a list
+            llm_reasoning = llm_result.get('reasoning', [])
+            if isinstance(llm_reasoning, str):
+                llm_reasoning = [llm_reasoning]
+            elif not isinstance(llm_reasoning, list):
+                llm_reasoning = []
+
+            validation_reasons = validation.get('reasons', [])
+            if not isinstance(validation_reasons, list):
+                validation_reasons = []
+
             return {
                 'entity_type': llm_result['entity_type'],
                 'confidence': adjusted_confidence,
-                'reasoning': llm_result.get('reasoning', []) + validation.get('reasons', []),
+                'reasoning': llm_reasoning + validation_reasons,
                 'recommendation': recommendation,
                 'method': 'llm_with_validation'
             }
@@ -803,17 +814,28 @@ Classify as characters/locations/lore/null with JSON response."""
         context_lower = context.lower()
         name_lower = entity_name.lower()
         
+        # Use comprehensive indicators from entity type definitions
+        definitions = self.entity_definitions.definitions
+
         # Check for character indicators
-        character_indicators = ['said', 'spoke', 'he', 'she', 'they', 'king', 'queen', 'wizard']
-        character_score = sum(1 for indicator in character_indicators if indicator in context_lower)
-        
-        # Check for location indicators  
-        location_indicators = ['city', 'castle', 'forest', 'mountain', 'in', 'at', 'located']
-        location_score = sum(1 for indicator in location_indicators if indicator in context_lower)
-        
+        character_indicators = definitions['characters'].positive_indicators
+        character_score = sum(1 for indicator in character_indicators if indicator in context_lower or indicator in name_lower)
+
+        # Add character-specific context patterns
+        character_patterns = ['said', 'spoke', 'he', 'she', 'they', 'him', 'her', 'his', 'hers']
+        character_score += sum(1 for pattern in character_patterns if pattern in context_lower)
+
+        # Check for location indicators
+        location_indicators = definitions['locations'].positive_indicators
+        location_score = sum(1 for indicator in location_indicators if indicator in context_lower or indicator in name_lower)
+
+        # Add location-specific context patterns
+        location_patterns = ['lives in', 'located in', 'situated in', 'visited', 'traveled to', 'from', 'to']
+        location_score += sum(2 for pattern in location_patterns if pattern in context_lower)
+
         # Check for lore indicators
-        lore_indicators = ['magic', 'spell', 'legend', 'war', 'battle', 'organization']
-        lore_score = sum(1 for indicator in lore_indicators if indicator in context_lower)
+        lore_indicators = definitions['lore'].positive_indicators
+        lore_score = sum(1 for indicator in lore_indicators if indicator in context_lower or indicator in name_lower)
         
         scores = {
             'characters': character_score,

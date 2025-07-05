@@ -159,17 +159,17 @@ class MultiAgentCoordinator:
         if entity_data.get('title'):
             add_field_content(entity_data['title'])
         
-        # Add type-specific fields
+        # Add type-specific fields (consistent with cross-reference agent)
         if entity_type == 'characters':
-            for field in ['description', 'background', 'personality']:
+            for field in ['description', 'personality', 'backstory', 'background', 'occupation']:
                 if entity_data.get(field):
                     add_field_content(entity_data[field])
         elif entity_type == 'locations':
-            for field in ['description', 'geography', 'culture']:
+            for field in ['description', 'geography', 'climate', 'culture', 'history', 'notable_features']:
                 if entity_data.get(field):
                     add_field_content(entity_data[field])
         elif entity_type == 'lore':
-            for field in ['details', 'significance', 'related_events']:
+            for field in ['description', 'details', 'significance', 'related_events']:
                 if entity_data.get(field):
                     add_field_content(entity_data[field])
         
@@ -236,9 +236,9 @@ class MultiAgentCoordinator:
         potential_entities = []
 
         try:
-            # Use regex patterns to extract proper nouns
+            # Use regex patterns to extract proper nouns (limit to max 3 words)
             import re
-            proper_noun_pattern = r'\b[A-Z][a-zA-Z]{1,}(?:\s+[A-Z][a-zA-Z]{1,})*\b'
+            proper_noun_pattern = r'\b[A-Z][a-zA-Z]{1,}(?:\s+[A-Z][a-zA-Z]{1,}){0,2}\b'
 
             # Enhanced filtering lists for selective processing
             common_words = {
@@ -248,7 +248,10 @@ class MultiAgentCoordinator:
                 'this', 'that', 'these', 'those', 'here', 'there', 'where', 'when', 'why', 'how',
                 'what', 'who', 'which', 'whose', 'whom', 'all', 'any', 'some', 'many', 'much',
                 'few', 'little', 'more', 'most', 'other', 'another', 'such', 'no', 'not', 'only',
-                'own', 'same', 'so', 'than', 'too', 'very', 'can', 'just', 'now', 'also', 'still'
+                'own', 'same', 'so', 'than', 'too', 'very', 'can', 'just', 'now', 'also', 'still',
+                # Add common descriptive words that shouldn't be entities
+                'character', 'protagonist', 'story', 'main', 'during', 'their', 'adventures',
+                'together', 'later', 'both', 'under', 'wise', 'ancient', 'legendary'
             }
 
             # Low-confidence patterns that should be deprioritized
@@ -267,6 +270,15 @@ class MultiAgentCoordinator:
 
                 # Basic filtering
                 if len(name) < 2 or name.lower() in common_words:
+                    continue
+
+                # Filter out names containing common descriptive words
+                name_words = name.lower().split()
+                if any(word in common_words for word in name_words):
+                    continue
+
+                # Skip if it's just "The" + something
+                if name.startswith('The ') and len(name_words) == 2:
                     continue
 
                 # Get enhanced context with larger window

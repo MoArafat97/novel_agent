@@ -66,6 +66,37 @@
     </div>
 </div>
 
+<!-- Cross-Reference Tools -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-link me-2"></i>Cross-Reference Tools</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('simple_cross_reference.show_detection_ui', novel_id=novel.id) }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                            <i class="fas fa-search-plus fa-2x mb-2"></i>
+                            <h6 class="mb-1">Detect New Entities</h6>
+                            <small class="text-muted">Find new characters, locations, and lore mentioned in your content</small>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info mb-0">
+                            <h6><i class="fas fa-info-circle me-1"></i>How it works</h6>
+                            <small>
+                                Select any character, location, or lore entry to analyze its content for mentions of new entities
+                                that should be added to your worldbuilding database.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Quick Overview -->
 <div class="row">
     <!-- Recent Characters -->

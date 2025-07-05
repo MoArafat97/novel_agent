@@ -145,12 +145,14 @@ class FormHandler {
             edit_request: editRequest
         });
 
-        if (response.success) {
-            this.updateEntityDisplay(response[entityType]);
+        if (response && response.success) {
+            if (response[entityType]) {
+                this.updateEntityDisplay(response[entityType]);
+            }
             window.apiUtils.showNotification(response.message || 'Updated successfully!', 'success');
             form.querySelector('[name="edit_request"]').value = '';
         } else {
-            throw new Error(response.error || 'Fast edit failed');
+            throw new Error((response && response.error) || 'Fast edit failed');
         }
     }
 
@@ -200,10 +202,16 @@ class FormHandler {
     }
 
     showRealTimeChanges(data) {
+        // Validate input data
+        if (!data || typeof data !== 'object') {
+            console.error('Invalid data provided to showRealTimeChanges:', data);
+            return;
+        }
+
         // Highlight changed fields
         Object.keys(data).forEach(field => {
             const element = document.getElementById(field);
-            if (element && data[field] !== undefined) {
+            if (element && data[field] !== undefined && data[field] !== null) {
                 this.highlightChange(element, data[field]);
             }
         });
@@ -242,10 +250,16 @@ class FormHandler {
     }
 
     updateEntityDisplay(entityData) {
+        // Validate input data
+        if (!entityData || typeof entityData !== 'object') {
+            console.error('Invalid entity data provided to updateEntityDisplay:', entityData);
+            return;
+        }
+
         // Update display fields with new data
         Object.keys(entityData).forEach(field => {
             const displayElement = document.getElementById(field);
-            if (displayElement && entityData[field] !== undefined) {
+            if (displayElement && entityData[field] !== undefined && entityData[field] !== null) {
                 if (displayElement.tagName === 'INPUT' || displayElement.tagName === 'TEXTAREA') {
                     displayElement.value = entityData[field];
                 } else {

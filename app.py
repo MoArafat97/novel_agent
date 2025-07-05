@@ -5,7 +5,8 @@ import logging
 from datetime import datetime
 from database import WorldState
 from database.semantic_search import SemanticSearchEngine
-from agents import CharacterCreatorAgent, CharacterEditorAgent, LoreCreatorAgent, LoreEditorAgent, LocationCreatorAgent, LocationEditorAgent, CrossReferenceAgent
+from agents import CharacterCreatorAgent, CharacterEditorAgent, LoreCreatorAgent, LoreEditorAgent, LocationCreatorAgent, LocationEditorAgent
+from routes.simple_cross_reference import simple_cross_reference_bp
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -28,7 +29,10 @@ lore_creator = LoreCreatorAgent()
 lore_editor = LoreEditorAgent()
 location_creator = LocationCreatorAgent()
 location_editor = LocationEditorAgent()
-cross_reference_agent = CrossReferenceAgent(world_state, semantic_search)
+# Note: Cross-reference functionality now uses SimpleCrossReferenceService via blueprint
+
+# Register blueprints
+app.register_blueprint(simple_cross_reference_bp)
 
 # Home route
 @app.route('/')
@@ -1214,248 +1218,104 @@ def api_stats():
         logger.error(f"Stats API error: {e}")
         return jsonify({'error': 'Failed to get stats'}), 500
 
-# Cross-reference routes
-@app.route('/novel/<novel_id>/cross-reference/analyze', methods=['POST'])
-def cross_reference_analyze(novel_id):
-    """Analyze content for cross-references and relationships."""
-    try:
-        data = request.get_json()
-        entity_type = data.get('entity_type')
-        entity_id = data.get('entity_id')
-
-        if not entity_type or not entity_id:
-            return jsonify({'success': False, 'error': 'Missing entity_type or entity_id'}), 400
-
-        # Verify novel exists
-        novel = world_state.get('novels', novel_id)
-        if not novel:
-            return jsonify({'success': False, 'error': 'Novel not found'}), 404
-
-        # Get entity data
-        entity_data = world_state.get(entity_type, entity_id)
-        if not entity_data:
-            return jsonify({'success': False, 'error': 'Entity not found'}), 404
-
-        # Verify entity belongs to this novel
-        if entity_data.get('novel_id') != novel_id:
-            return jsonify({'success': False, 'error': 'Entity does not belong to this novel'}), 400
-
-        # Check if cross-reference agent is available
-        if not cross_reference_agent.is_available():
-            return jsonify({'success': False, 'error': 'Cross-reference analysis not available'}), 503
-
-        # Perform cross-reference analysis
-        analysis_result = cross_reference_agent.analyze_content(
-            entity_type, entity_id, entity_data, novel_id
-        )
-
-        return jsonify({
-            'success': analysis_result.get('success', False),
-            'analysis': analysis_result
-        })
-
-    except Exception as e:
-        logger.error(f"Cross-reference analysis error: {e}")
-        return jsonify({'success': False, 'error': 'Analysis failed'}), 500
-
-@app.route('/novel/<novel_id>/cross-reference/apply', methods=['POST'])
-def cross_reference_apply(novel_id):
-    """Apply approved cross-reference updates."""
-    try:
-        data = request.get_json()
-        updates_to_apply = data.get('updates', [])
-
-        if not updates_to_apply:
-            return jsonify({'success': False, 'error': 'No updates provided'}), 400
-
-        # Verify novel exists
-        novel = world_state.get('novels', novel_id)
-        if not novel:
-            return jsonify({'success': False, 'error': 'Novel not found'}), 404
-
-        # Check if cross-reference agent is available
-        if not cross_reference_agent.is_available():
-            return jsonify({'success': False, 'error': 'Cross-reference agent not available'}), 503
-
-        # Apply the updates
-        result = cross_reference_agent.apply_updates(updates_to_apply, novel_id)
-
-        return jsonify(result)
-
-    except Exception as e:
-        logger.error(f"Cross-reference apply error: {e}")
-        return jsonify({'success': False, 'error': 'Failed to apply updates'}), 500
-
-@app.route('/novel/<novel_id>/cross-reference/status')
-def cross_reference_status(novel_id):
-    """Get cross-reference agent status."""
+# Cross-reference API routes for entity lists
+@app.route('/api/novel/<novel_id>/worldbuilding/characters')
+def api_novel_characters(novel_id):
+    """API endpoint to get characters for a novel as JSON."""
     try:
         # Verify novel exists
         novel = world_state.get('novels', novel_id)
         if not novel:
-            return jsonify({'success': False, 'error': 'Novel not found'}), 404
+            return jsonify({'error': 'Novel not found'}), 404
 
-        return jsonify({
-            'success': True,
-            'available': cross_reference_agent.is_available(),
-            'agent_info': {
-                'has_openrouter': cross_reference_agent.openrouter_client is not None,
-                'has_world_state': cross_reference_agent.world_state is not None,
-                'has_semantic_search': cross_reference_agent.semantic_search is not None
-            }
-        })
+        # Get characters for this novel
+        all_characters = world_state.get_all('characters')
+        novel_characters = [char for char in all_characters if char.get('novel_id') == novel_id]
 
+        # Return simplified character data for the API
+        characters_data = []
+        for char in novel_characters:
+            characters_data.append({
+                'id': char['id'],
+                'name': char.get('name', 'Unnamed Character'),
+                'role': char.get('role', ''),
+                'description': char.get('description', '')[:100] + '...' if len(char.get('description', '')) > 100 else char.get('description', '')
+            })
+
+        return jsonify(characters_data)
     except Exception as e:
-        logger.error(f"Cross-reference status error: {e}")
-        return jsonify({'success': False, 'error': 'Failed to get status'}), 500
+        logger.error(f"API characters error: {e}")
+        return jsonify({'error': 'Failed to get characters'}), 500
 
-# Streaming cross-reference routes
-@app.route('/novel/<novel_id>/cross-reference/analyze-stream', methods=['POST'])
-def cross_reference_analyze_stream(novel_id):
-    """Start streaming cross-reference analysis."""
-    try:
-        data = request.get_json()
-        entity_type = data.get('entity_type')
-        entity_id = data.get('entity_id')
-
-        if not entity_type or not entity_id:
-            return jsonify({'success': False, 'error': 'Missing entity_type or entity_id'}), 400
-
-        # Verify novel exists
-        novel = world_state.get('novels', novel_id)
-        if not novel:
-            return jsonify({'success': False, 'error': 'Novel not found'}), 404
-
-        # Get entity data
-        entity_data = world_state.get(entity_type, entity_id)
-        if not entity_data:
-            return jsonify({'success': False, 'error': 'Entity not found'}), 404
-
-        # Verify entity belongs to this novel
-        if entity_data.get('novel_id') != novel_id:
-            return jsonify({'success': False, 'error': 'Entity does not belong to this novel'}), 400
-
-        # Check if cross-reference agent is available
-        if not cross_reference_agent.is_available():
-            return jsonify({'success': False, 'error': 'Cross-reference analysis not available'}), 503
-
-        # Start streaming analysis
-        job_id = cross_reference_agent.analyze_content_streaming(
-            entity_type, entity_id, entity_data, novel_id
-        )
-
-        return jsonify({
-            'success': True,
-            'job_id': job_id,
-            'stream_url': f'/novel/{novel_id}/cross-reference/stream/{job_id}'
-        })
-
-    except Exception as e:
-        logger.error(f"Streaming cross-reference analysis error: {e}")
-        return jsonify({'success': False, 'error': 'Failed to start analysis'}), 500
-
-@app.route('/novel/<novel_id>/cross-reference/stream/<job_id>')
-def cross_reference_stream(novel_id, job_id):
-    """Stream cross-reference analysis progress."""
+@app.route('/api/novel/<novel_id>/worldbuilding/locations')
+def api_novel_locations(novel_id):
+    """API endpoint to get locations for a novel as JSON."""
     try:
         # Verify novel exists
         novel = world_state.get('novels', novel_id)
         if not novel:
-            return jsonify({'success': False, 'error': 'Novel not found'}), 404
+            return jsonify({'error': 'Novel not found'}), 404
 
-        # Get streaming manager
-        streaming_manager = cross_reference_agent.streaming_manager
+        # Get locations for this novel
+        all_locations = world_state.get_all('locations')
+        novel_locations = [loc for loc in all_locations if loc.get('novel_id') == novel_id]
 
-        # Verify job exists
-        job = streaming_manager.get_job(job_id)
-        if not job:
-            return jsonify({'success': False, 'error': 'Job not found'}), 404
+        # Return simplified location data for the API
+        locations_data = []
+        for loc in novel_locations:
+            locations_data.append({
+                'id': loc['id'],
+                'name': loc.get('name', 'Unnamed Location'),
+                'type': loc.get('type', ''),
+                'description': loc.get('description', '')[:100] + '...' if len(loc.get('description', '')) > 100 else loc.get('description', '')
+            })
 
-        # Verify job belongs to this novel
-        if job.novel_id != novel_id:
-            return jsonify({'success': False, 'error': 'Job does not belong to this novel'}), 400
-
-        # Return Server-Sent Events stream
-        def generate():
-            yield "data: " + json.dumps({'type': 'connected', 'job_id': job_id}) + "\n\n"
-
-            for progress_data in streaming_manager.get_progress_stream(job_id):
-                yield progress_data
-
-        return Response(generate(), mimetype='text/event-stream', headers={
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Cache-Control'
-        })
-
+        return jsonify(locations_data)
     except Exception as e:
-        logger.error(f"Cross-reference stream error: {e}")
-        return jsonify({'success': False, 'error': 'Stream failed'}), 500
+        logger.error(f"API locations error: {e}")
+        return jsonify({'error': 'Failed to get locations'}), 500
 
-@app.route('/novel/<novel_id>/cross-reference/job/<job_id>')
-def cross_reference_job_status(novel_id, job_id):
-    """Get job status and result."""
+@app.route('/api/novel/<novel_id>/worldbuilding/lore')
+def api_novel_lore(novel_id):
+    """API endpoint to get lore for a novel as JSON."""
     try:
         # Verify novel exists
         novel = world_state.get('novels', novel_id)
         if not novel:
-            return jsonify({'success': False, 'error': 'Novel not found'}), 404
+            return jsonify({'error': 'Novel not found'}), 404
 
-        # Get streaming manager
-        streaming_manager = cross_reference_agent.streaming_manager
+        # Get lore for this novel
+        all_lore = world_state.get_all('lore')
+        novel_lore = [lore for lore in all_lore if lore.get('novel_id') == novel_id]
 
-        # Get job
-        job = streaming_manager.get_job(job_id)
-        if not job:
-            return jsonify({'success': False, 'error': 'Job not found'}), 404
+        # Return simplified lore data for the API
+        lore_data = []
+        for lore in novel_lore:
+            lore_data.append({
+                'id': lore['id'],
+                'title': lore.get('title', 'Untitled Lore'),
+                'category': lore.get('category', ''),
+                'content': lore.get('content', '')[:100] + '...' if len(lore.get('content', '')) > 100 else lore.get('content', '')
+            })
 
-        # Verify job belongs to this novel
-        if job.novel_id != novel_id:
-            return jsonify({'success': False, 'error': 'Job does not belong to this novel'}), 400
-
-        return jsonify({
-            'success': True,
-            'job': job.to_dict()
-        })
-
+        return jsonify(lore_data)
     except Exception as e:
-        logger.error(f"Job status error: {e}")
-        return jsonify({'success': False, 'error': 'Failed to get job status'}), 500
+        logger.error(f"API lore error: {e}")
+        return jsonify({'error': 'Failed to get lore'}), 500
 
-@app.route('/novel/<novel_id>/cross-reference/job/<job_id>/cancel', methods=['POST'])
-def cross_reference_cancel_job(novel_id, job_id):
-    """Cancel a running analysis job."""
-    try:
-        # Verify novel exists
-        novel = world_state.get('novels', novel_id)
-        if not novel:
-            return jsonify({'success': False, 'error': 'Novel not found'}), 404
 
-        # Get streaming manager
-        streaming_manager = cross_reference_agent.streaming_manager
 
-        # Get job
-        job = streaming_manager.get_job(job_id)
-        if not job:
-            return jsonify({'success': False, 'error': 'Job not found'}), 404
 
-        # Verify job belongs to this novel
-        if job.novel_id != novel_id:
-            return jsonify({'success': False, 'error': 'Job does not belong to this novel'}), 400
 
-        # Cancel job
-        cancelled = streaming_manager.cancel_job(job_id)
 
-        return jsonify({
-            'success': True,
-            'cancelled': cancelled,
-            'message': 'Job cancelled successfully' if cancelled else 'Job could not be cancelled'
-        })
 
-    except Exception as e:
-        logger.error(f"Job cancellation error: {e}")
-        return jsonify({'success': False, 'error': 'Failed to cancel job'}), 500
+
+
+
+
+
+
+
 
 # Change history and undo routes
 @app.route('/novel/<novel_id>/change-history')
@@ -1636,6 +1496,14 @@ def api_save_character(character_id):
                     'ai_unavailable': True
                 }), 503
 
+            # Validate updated character data
+            if not updated_character or not isinstance(updated_character, dict):
+                logger.error(f"Invalid character data returned from AI: {type(updated_character)}")
+                return jsonify({
+                    'success': False,
+                    'error': 'AI returned invalid character data'
+                }), 500
+
             # Add metadata for successful AI edit
             updated_character['updated_at'] = datetime.now().isoformat()
             updated_character['ai_edited'] = True
@@ -1646,7 +1514,7 @@ def api_save_character(character_id):
             if success:
                 return jsonify({
                     'success': True,
-                    'message': f'Character "{character.get("name")}" updated successfully using AI!',
+                    'message': f'Character "{character.get("name", "Unknown")}" updated successfully using AI!',
                     'character': updated_character
                 })
             else:

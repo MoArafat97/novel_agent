@@ -337,6 +337,15 @@ document.addEventListener('DOMContentLoaded', function() {
         tags: document.getElementById('char-tags')
     };
 
+    // Validate that required DOM elements exist
+    const missingElements = Object.entries(charElements)
+        .filter(([key, element]) => !element)
+        .map(([key]) => key);
+
+    if (missingElements.length > 0) {
+        console.warn('Missing character display elements:', missingElements);
+    }
+
     // Handle AI editing
     form.addEventListener('submit', function(e) {
         e.preventDefault(); // Prevent default form submission
@@ -449,17 +458,19 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data && data.success) {
                 updateStatus.innerHTML = '<i class="fas fa-check me-1"></i>Character updated!';
                 updateStatus.className = 'badge bg-success ms-2';
 
-                // Update the character display with new data
-                updateCharacterDisplay(data.character);
+                // Update the character display with new data if provided
+                if (data.character) {
+                    updateCharacterDisplay(data.character);
+                }
 
                 // Show success message and keep user on page to see highlights
                 showEditSuccess('Character updated successfully! You can see the changes highlighted in blue above.');
             } else {
-                throw new Error(data.error || 'Fast edit failed');
+                throw new Error((data && data.error) || 'Fast edit failed');
             }
         })
         .catch(error => {
@@ -472,9 +483,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateCharacterDisplay(characterData) {
+        // Validate input data
+        if (!characterData || typeof characterData !== 'object') {
+            console.error('Invalid character data provided to updateCharacterDisplay:', characterData);
+            return;
+        }
+
         // Update character fields with new data and highlight changes
         Object.keys(characterData).forEach(field => {
-            if (charElements[field] && characterData[field]) {
+            if (charElements[field] && characterData[field] !== undefined && characterData[field] !== null) {
                 updateCharacterField(field, characterData[field]);
             }
         });
@@ -516,8 +533,8 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(previewData => {
-            if (previewData.error) {
-                throw new Error(previewData.error);
+            if (!previewData || previewData.error) {
+                throw new Error((previewData && previewData.error) || 'Preview failed');
             }
 
             // Step 2: Show real-time updates
@@ -540,6 +557,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showRealTimeChanges(newData) {
+        // Validate input data
+        if (!newData || typeof newData !== 'object') {
+            console.error('Invalid data provided to showRealTimeChanges:', newData);
+            return;
+        }
+
         updateStatus.innerHTML = '<i class="fas fa-magic me-1"></i>Applying changes...';
         updateStatus.className = 'badge bg-success ms-2';
 
@@ -556,14 +579,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updates.forEach(update => {
             setTimeout(() => {
-                updateCharacterField(update.field, newData[update.field]);
+                if (newData[update.field] !== undefined && newData[update.field] !== null) {
+                    updateCharacterField(update.field, newData[update.field]);
+                }
             }, update.delay);
         });
     }
 
     function updateCharacterField(fieldName, newValue) {
         const element = charElements[fieldName];
-        if (!element || !newValue) return;
+        if (!element || newValue === undefined || newValue === null) return;
+
+        // Handle empty string values
+        if (typeof newValue === 'string' && newValue.trim() === '') return;
 
         // Store original content for comparison
         const originalContent = element.textContent || element.innerHTML;
@@ -641,10 +669,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-            if (data.success) {
+            if (data && data.success) {
                 // Success - show completion message
                 updateStatus.innerHTML = '<i class="fas fa-check me-1"></i>Character updated!';
                 updateStatus.className = 'badge bg-success ms-2';
+
+                // Update character display if character data is provided
+                if (data.character) {
+                    updateCharacterDisplay(data.character);
+                }
 
                 // Show success message and keep user on page to see highlights
                 showEditSuccess('Character updated successfully! You can see the changes highlighted in blue above.');
@@ -652,7 +685,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Clear the edit request
                 document.getElementById('edit_request').value = '';
             } else {
-                throw new Error(data.error || 'Unknown error');
+                throw new Error((data && data.error) || 'Unknown error occurred');
             }
         })
         .catch(error => {

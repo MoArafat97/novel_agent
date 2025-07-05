@@ -101,16 +101,25 @@ class APIUtils {
      */
     async parseResponse(response) {
         const contentType = response.headers.get('content-type');
-        
-        if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            
-            // Validate response structure
-            if (typeof data !== 'object') {
-                throw new Error('Invalid response format');
-            }
 
-            return data;
+        if (contentType && contentType.includes('application/json')) {
+            try {
+                const data = await response.json();
+
+                // Validate response structure
+                if (data === null || data === undefined) {
+                    throw new Error('Received null or undefined response');
+                }
+
+                if (typeof data !== 'object') {
+                    throw new Error('Invalid response format - expected object');
+                }
+
+                return data;
+            } catch (jsonError) {
+                console.error('JSON parsing error:', jsonError);
+                throw new Error('Failed to parse server response');
+            }
         } else {
             const text = await response.text();
             return { success: true, data: text };
