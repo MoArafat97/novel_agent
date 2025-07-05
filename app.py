@@ -62,15 +62,9 @@ def novel_detail(novel_id):
     if not novel:
         flash('Novel not found', 'error')
         return redirect(url_for('index'))
-    
-    # Get novel-specific entities
-    novel_entities = world_state.get_entities_by_novel(novel_id)
-    
-    return render_template('novel_detail.html', 
-                         novel=novel,
-                         characters=novel_entities.get('characters', []),
-                         locations=novel_entities.get('locations', []),
-                         lore=novel_entities.get('lore', []))
+
+    # Only pass basic novel information for simplified view
+    return render_template('novel_detail.html', novel=novel)
 
 @app.route('/edit_novel/<novel_id>', methods=['GET', 'POST'])
 def edit_novel(novel_id):

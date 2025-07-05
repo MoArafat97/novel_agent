@@ -3,9 +3,10 @@
 {% block title %}{{ novel.title }} - Lazywriter{% endblock %}
 
 {% block content %}
-<div class="row">
+<!-- Novel Header -->
+<div class="row mb-4">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-start mb-4">
+        <div class="d-flex justify-content-between align-items-start">
             <div>
                 <h1>{{ novel.title }}</h1>
                 <p class="text-muted">
@@ -15,9 +16,6 @@
                 </p>
             </div>
             <div class="btn-group" role="group">
-                <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="btn btn-primary">
-                    <i class="fas fa-globe me-1"></i>Worldbuilding
-                </a>
                 <a href="{{ url_for('edit_novel', novel_id=novel.id) }}" class="btn btn-outline-primary">
                     <i class="fas fa-edit me-1"></i>Edit Novel
                 </a>
@@ -32,127 +30,78 @@
     </div>
 </div>
 
-<div class="row mb-4">
+<!-- Novel Description -->
+<div class="row mb-5">
     <div class="col-12">
         <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Description</h5>
+            </div>
             <div class="card-body">
-                <h5 class="card-title">Description</h5>
-                <p class="card-text">{{ novel.description }}</p>
+                <p class="lead">{{ novel.description }}</p>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Characters</h5>
-                <a href="{{ url_for('novel_create_character', novel_id=novel.id) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-plus"></i>
-                </a>
-            </div>
-            <div class="card-body">
-                {% if characters %}
-                    {% for character in characters %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <strong>{{ character.name }}</strong>
-                                <br>
-                                <small class="text-muted">{{ character.occupation }}</small>
-                            </div>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ url_for('novel_character_detail', novel_id=novel.id, character_id=character.id) }}" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ url_for('novel_edit_character', novel_id=novel.id, character_id=character.id) }}" class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </div>
-                        </div>
-                        {% if not loop.last %}<hr class="my-2">{% endif %}
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center">No characters yet</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Locations</h5>
-                <a href="{{ url_for('novel_create_location', novel_id=novel.id) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-plus"></i>
-                </a>
-            </div>
-            <div class="card-body">
-                {% if locations %}
-                    {% for location in locations %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <strong>{{ location.name }}</strong>
-                                <br>
-                                <small class="text-muted">{{ location.type }}</small>
-                            </div>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ url_for('novel_location_detail', novel_id=novel.id, location_id=location.id) }}" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ url_for('novel_edit_location', novel_id=novel.id, location_id=location.id) }}" class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </div>
-                        </div>
-                        {% if not loop.last %}<hr class="my-2">{% endif %}
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center">No locations yet</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-scroll me-2"></i>Lore</h5>
-                <a href="{{ url_for('novel_create_lore', novel_id=novel.id) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-plus"></i>
-                </a>
-            </div>
-            <div class="card-body">
-                {% if lore %}
-                    {% for lore_entry in lore %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <strong>{{ lore_entry.title }}</strong>
-                                <br>
-                                <small class="text-muted">{{ lore_entry.category }}</small>
-                            </div>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ url_for('novel_lore_detail', novel_id=novel.id, lore_id=lore_entry.id) }}" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ url_for('novel_edit_lore', novel_id=novel.id, lore_id=lore_entry.id) }}" class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </div>
-                        </div>
-                        {% if not loop.last %}<hr class="my-2">{% endif %}
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center">No lore entries yet</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
+<!-- Main Navigation Tiles -->
+<div class="row mb-5">
     <div class="col-12">
-        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        <h2 class="text-center mb-4">What would you like to work on?</h2>
+        <div class="row justify-content-center">
+            <!-- Worldbuilding Tile -->
+            <div class="col-md-5 mb-4">
+                <a href="{{ url_for('novel_worldbuilding', novel_id=novel.id) }}" class="text-decoration-none">
+                    <div class="card navigation-tile h-100 border-primary">
+                        <div class="card-body text-center p-5">
+                            <div class="navigation-tile-icon mb-3">
+                                <i class="fas fa-globe fa-4x text-primary"></i>
+                            </div>
+                            <h3 class="card-title text-primary mb-3">Worldbuilding</h3>
+                            <p class="card-text text-muted">
+                                Create and manage characters, locations, and lore for your story world.
+                            </p>
+                            <div class="mt-4">
+                                <span class="btn btn-primary btn-lg">
+                                    <i class="fas fa-arrow-right me-2"></i>Enter Worldbuilding
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Writing Tile (Coming Soon) -->
+            <div class="col-md-5 mb-4">
+                <div class="card navigation-tile navigation-tile-disabled h-100 border-secondary">
+                    <div class="card-body text-center p-5 position-relative">
+                        <div class="navigation-tile-icon mb-3">
+                            <i class="fas fa-pen-fancy fa-4x text-secondary"></i>
+                        </div>
+                        <h3 class="card-title text-secondary mb-3">Writing</h3>
+                        <p class="card-text text-muted">
+                            Write your novel with AI assistance, chapter management, and progress tracking.
+                        </p>
+                        <div class="mt-4">
+                            <span class="btn btn-secondary btn-lg disabled">
+                                <i class="fas fa-lock me-2"></i>Coming Soon
+                            </span>
+                        </div>
+                        <!-- Coming Soon Badge -->
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <span class="badge bg-warning text-dark">Coming Soon</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Back Navigation -->
+<div class="row">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i>Back to Novels
         </a>
     </div>
