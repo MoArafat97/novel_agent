@@ -1,0 +1,155 @@
+[tool.ruff]
+# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
+select = ["E", "F", "W", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "COM", "C4", "DTZ", "T10", "EM", "EXE", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
+
+# Ignore specific rules that may be too strict for this project
+ignore = [
+    "E501",    # Line too long (handled by black)
+    "S101",    # Use of assert (common in tests)
+    "S311",    # Standard pseudo-random generators (not cryptographic)
+    "PLR0913", # Too many arguments to function call
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
+    "C901",    # Too complex (function is too complex)
+    "T201",    # Print found (allow print statements)
+    "S603",    # Subprocess call (allow subprocess usage)
+    "S607",    # Starting a process with a partial executable path
+    "B008",    # Do not perform function calls in argument defaults
+    "ARG001",  # Unused function argument
+    "ARG002",  # Unused method argument
+    "FBT001",  # Boolean positional arg in function definition
+    "FBT002",  # Boolean default positional argument in function definition
+    "TRY003",  # Avoid specifying long messages outside the exception class
+    "EM101",   # Exception must not use a string literal
+    "EM102",   # Exception must not use an f-string literal
+]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "htmlcov",
+    "test_data",
+]
+
+# Same as Black.
+line-length = 88
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Assume Python 3.11
+target-version = "py311"
+
+[tool.ruff.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
+
+[tool.ruff.per-file-ignores]
+# Tests can use magic values, assertions, and fixtures
+"tests/*" = ["PLR2004", "S101", "ARG", "FBT"]
+# Allow print statements in scripts
+"scripts/*" = ["T201"]
+# Allow subprocess in performance benchmarks
+"performance_benchmark.py" = ["S603", "S607"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | htmlcov
+  | test_data
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["agents", "database", "utils"]
+skip = ["venv", ".venv", "htmlcov", "test_data"]
+
+[tool.coverage.run]
+source = ["agents", "database", "utils", "app"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "venv/*",
+    ".venv/*",
+    "htmlcov/*",
+    "test_data/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "performance: Performance tests",
+    "slow: Slow running tests",
+    "requires_api: Tests that require API keys",
+    "requires_models: Tests that require ML models",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning:chromadb.*",
+    "ignore::UserWarning:transformers.*",
+]
