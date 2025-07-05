@@ -274,12 +274,72 @@ textarea::-webkit-scrollbar-thumb:hover {
     background-color: #f8f9fa;
 }
 
+/* Navigation Tiles */
+.navigation-tile {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 300px;
+}
+
+.navigation-tile:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.navigation-tile .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.navigation-tile-icon {
+    transition: transform 0.3s ease;
+}
+
+.navigation-tile:hover .navigation-tile-icon {
+    transform: scale(1.1);
+}
+
+.navigation-tile-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.navigation-tile-disabled:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navigation-tile-disabled .navigation-tile-icon {
+    transform: none !important;
+}
+
+/* Responsive navigation tiles */
+@media (max-width: 768px) {
+    .navigation-tile {
+        min-height: 250px;
+    }
+
+    .navigation-tile .card-body {
+        padding: 2rem !important;
+    }
+
+    .navigation-tile-icon i {
+        font-size: 2.5rem !important;
+    }
+
+    .navigation-tile h3 {
+        font-size: 1.5rem;
+    }
+}
+
 /* Print styles */
 @media print {
     .navbar, .btn, .card-footer, footer {
         display: none !important;
     }
-    
+
     .card {
         border: 1px solid #dee2e6 !important;
         box-shadow: none !important;
