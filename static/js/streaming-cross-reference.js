@@ -74,7 +74,10 @@ class StreamingCrossReferenceManager {
 
         } catch (error) {
             console.error('Streaming cross-reference analysis error:', error);
-            this.showError('Failed to start streaming analysis');
+            const message = window.apiUtils ?
+                window.apiUtils.handleError(error, 'streaming analysis') :
+                'Failed to start streaming analysis';
+            this.showError(message);
         }
     }
 

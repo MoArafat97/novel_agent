@@ -57,6 +57,10 @@
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Global Notification Container -->
+    <div id="notification-container" class="position-fixed" style="top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
+    </div>
+
     <footer class="bg-light mt-5 py-4">
         <div class="container text-center">
             <p class="text-muted mb-0">
@@ -68,6 +72,69 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <!-- Enhanced API and Form Handling -->
+    <script src="{{ url_for('static', filename='js/api-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/stream-manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/form-handler.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/performance-optimizer.js') }}"></script>
+
+    <!-- Existing JavaScript modules -->
+    <script src="{{ url_for('static', filename='js/cross-reference.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/streaming-cross-reference.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/relationship-graphs.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/approval-workflow.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/undo-functionality.js') }}"></script>
+
+    <!-- Global Notification System -->
+    <script>
+        // Global notification function
+        window.showNotification = function(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('notification-container');
+            if (!container) return;
+
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show mb-2`;
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            container.appendChild(notification);
+
+            // Auto-remove after duration
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, duration);
+        };
+
+        // Enhanced error handling for fetch requests
+        window.handleFetchError = function(error, context = '') {
+            console.error(`Fetch Error ${context}:`, error);
+
+            let message = 'An unexpected error occurred. Please try again.';
+
+            if (error.name === 'AbortError') {
+                message = 'Request timed out. Please check your connection and try again.';
+            } else if (error.message.includes('HTTP 404')) {
+                message = 'The requested resource was not found.';
+            } else if (error.message.includes('HTTP 403')) {
+                message = 'You do not have permission to perform this action.';
+            } else if (error.message.includes('HTTP 500')) {
+                message = 'Server error. Please try again later.';
+            } else if (error.message.includes('Failed to fetch')) {
+                message = 'Network error. Please check your connection.';
+            } else if (error.message) {
+                message = error.message;
+            }
+
+            window.showNotification(message, 'danger');
+            return message;
+        };
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

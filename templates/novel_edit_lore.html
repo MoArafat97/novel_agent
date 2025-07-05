@@ -160,15 +160,20 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" id="editForm">
+                <form method="POST" id="editForm" class="ai-edit-form">
                     <!-- Quick Tags Editor -->
                     <div class="mb-4">
                         <label for="lore_tags" class="form-label">
                             <i class="fas fa-tags me-1"></i>Quick Edit Tags
                         </label>
-                        <input type="text" class="form-control" id="lore_tags" name="lore_tags"
-                               value="{{ lore.tags|join(', ') if lore.tags else '' }}"
-                               placeholder="magic, history, important">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="lore_tags" name="lore_tags"
+                                   value="{{ lore.tags|join(', ') if lore.tags else '' }}"
+                                   placeholder="magic, history, important">
+                            <button type="button" class="btn btn-outline-primary save-tags-btn" id="saveTagsBtn">
+                                <i class="fas fa-save me-1"></i>Save Tags
+                            </button>
+                        </div>
                         <div class="form-text">Comma-separated tags for organization</div>
                     </div>
 

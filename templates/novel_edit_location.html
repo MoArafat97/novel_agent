@@ -186,15 +186,20 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" id="editForm">
+                <form method="POST" id="editForm" class="ai-edit-form">
                     <!-- Quick Tags Editor -->
                     <div class="mb-4">
                         <label for="location_tags" class="form-label">
                             <i class="fas fa-tags me-1"></i>Quick Edit Tags
                         </label>
-                        <input type="text" class="form-control" id="location_tags" name="location_tags"
-                               value="{{ location.tags|join(', ') if location.tags else '' }}"
-                               placeholder="city, capital, trading, coastal">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="location_tags" name="location_tags"
+                                   value="{{ location.tags|join(', ') if location.tags else '' }}"
+                                   placeholder="city, capital, trading, coastal">
+                            <button type="button" class="btn btn-outline-primary save-tags-btn" id="saveTagsBtn">
+                                <i class="fas fa-save me-1"></i>Save Tags
+                            </button>
+                        </div>
                         <div class="form-text">
                             <i class="fas fa-info-circle me-1"></i>Separate tags with commas. Include type for better search.
                         </div>
