@@ -93,6 +93,97 @@ See [Cross-Reference System Documentation](docs/cross-reference-system.md) for d
 - Data is automatically saved when you create or edit entries
 - Deleting a novel will also delete all associated characters, locations, and lore
 
+## CI/CD Pipeline
+
+This project includes a comprehensive GitHub Actions CI/CD pipeline that automatically tests the application on every push and pull request.
+
+### Pipeline Features
+
+- **Code Quality**: Linting with Ruff, formatting checks with Black, import sorting with isort
+- **Testing**: Unit tests, integration tests, Flask application tests, and performance tests
+- **Security**: Vulnerability scanning with Safety and Bandit
+- **Coverage**: Code coverage reporting with Codecov integration
+- **Build Testing**: Ensures the application builds and starts correctly
+
+### Setting Up CI/CD
+
+1. **Fork or clone this repository**
+
+2. **Set up GitHub Secrets** (for full functionality):
+   ```
+   OPENROUTER_API_KEY: Your OpenRouter API key for AI features
+   ```
+
+3. **Enable GitHub Actions** in your repository settings
+
+4. **Push to main or create a pull request** to trigger the pipeline
+
+### Running Tests Locally
+
+Install development dependencies:
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run the full test suite:
+```bash
+# Run all tests
+python -m pytest
+
+# Run specific test categories
+python -m pytest -m unit                    # Unit tests only
+python -m pytest -m integration             # Integration tests only
+python -m pytest tests/test_flask_app.py    # Flask app tests only
+
+# Run with coverage
+python -m pytest --cov=agents --cov=database --cov=utils --cov=app
+```
+
+Run linting and formatting:
+```bash
+# Check code quality
+ruff check .
+
+# Format code
+black .
+
+# Sort imports
+isort .
+```
+
+Run security scans:
+```bash
+# Check for vulnerabilities
+safety check
+
+# Run security linter
+bandit -r .
+```
+
+### Environment Variables for Testing
+
+The CI/CD pipeline uses these environment variables for testing:
+
+- `TINYDB_PATH`: Path to TinyDB storage (set to test directory)
+- `CHROMADB_PATH`: Path to ChromaDB storage (set to test directory)
+- `USE_OPENROUTER_EMBEDDINGS`: Set to 'false' for testing without API
+- `OPENROUTER_API_KEY`: Your API key (use GitHub Secrets)
+- `FLASK_ENV`: Set to 'testing'
+- `FLASK_DEBUG`: Set to 'false' for testing
+
+### Pipeline Status
+
+The pipeline runs on:
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop` branches
+
+Pipeline jobs:
+1. **Lint**: Code quality and formatting checks
+2. **Test**: Comprehensive test suite (unit, integration, Flask app)
+3. **Build Test**: Application startup and basic functionality
+4. **Performance Test**: Performance benchmarks (main branch only)
+5. **Security Scan**: Vulnerability and security checks
+
 ## Future Enhancements
 
 This application is designed to be easily extensible. Planned features include:
@@ -125,6 +216,18 @@ This is a foundational project designed for expansion. Key areas for contributio
 4. Advanced worldbuilding features
 5. Export and import functionality
 6. Mobile app development
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests locally: `python -m pytest`
+5. Run linting: `ruff check . && black . && isort .`
+6. Commit your changes
+7. Push to your fork and create a pull request
+
+The CI/CD pipeline will automatically test your changes and provide feedback.
 
 ## License
 
