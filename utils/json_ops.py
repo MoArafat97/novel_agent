@@ -1,6 +1,7 @@
 import json
 import os
-from typing import List, Dict, Any
+import re
+from typing import List, Dict, Any, Optional
 
 # Data directory path
 DATA_DIR = 'data'
@@ -157,3 +158,73 @@ def initialize_data_files():
 
 # Initialize data files when module is imported
 initialize_data_files()
+
+
+class JSONOperations:
+    """Utility class for JSON operations and validation."""
+
+    @staticmethod
+    def safe_parse(json_string: str) -> Optional[Dict[str, Any]]:
+        """Safely parse JSON string, return None if invalid."""
+        try:
+            return json.loads(json_string)
+        except (json.JSONDecodeError, TypeError):
+            return None
+
+    @staticmethod
+    def extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
+        """Extract JSON object from mixed text."""
+        try:
+            # Look for JSON-like patterns in the text
+            json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+            matches = re.findall(json_pattern, text)
+
+            for match in matches:
+                try:
+                    return json.loads(match)
+                except json.JSONDecodeError:
+                    continue
+
+            return None
+        except Exception:
+            return None
+
+    @staticmethod
+    def validate_entity_json(data: Dict[str, Any], entity_type: str) -> bool:
+        """Validate entity JSON structure."""
+        required_fields = {
+            'characters': ['name', 'description'],
+            'locations': ['name', 'description'],
+            'lore': ['title', 'content'],
+            'novels': ['title', 'author']
+        }
+
+        if entity_type not in required_fields:
+            return False
+
+        for field in required_fields[entity_type]:
+            if field not in data or not data[field]:
+                return False
+
+        return True
+
+    @staticmethod
+    def sanitize_for_ai_response(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitize JSON data for AI responses."""
+        sanitized = {}
+
+        for key, value in data.items():
+            if value is None:
+                continue  # Skip None values
+
+            if isinstance(value, str):
+                # Escape quotes and special characters
+                value = value.replace('"', '\\"')
+                value = value.replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
+            elif isinstance(value, list):
+                # Remove None and empty values from lists
+                value = [item for item in value if item is not None and item != ""]
+
+            sanitized[key] = value
+
+        return sanitized
