@@ -34,6 +34,13 @@ location_editor = LocationEditorAgent()
 # Register blueprints
 app.register_blueprint(simple_cross_reference_bp)
 
+# Test route for cross-reference functionality
+@app.route('/test-cross-reference')
+def test_cross_reference():
+    """Test page for cross-reference functionality."""
+    with open('test_cross_reference.html', 'r') as f:
+        return f.read()
+
 # Home route
 @app.route('/')
 def index():

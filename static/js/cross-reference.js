@@ -64,7 +64,7 @@ class CrossReferenceManager {
             const analysisData = await analysisResponse.json();
 
             if (analysisData.success) {
-                this.currentAnalysis = analysisData.analysis;
+                this.currentAnalysis = analysisData;
                 this.showAnalysisResults();
             } else {
                 this.showError(analysisData.error || 'Analysis failed');
@@ -94,13 +94,18 @@ class CrossReferenceManager {
     showAnalysisResults() {
         if (!this.currentAnalysis) return;
 
-        // Check if we should use approval workflow
-        const useApprovalWorkflow = this.shouldUseApprovalWorkflow();
-
-        if (useApprovalWorkflow && window.approvalWorkflowManager) {
-            this.showApprovalWorkflowResults();
+        // Check if this is the simplified cross-reference system
+        if (this.currentAnalysis.analysis_type === 'new_entity_detection') {
+            this.showSimplifiedResults();
         } else {
-            this.showTraditionalResults();
+            // Check if we should use approval workflow for legacy system
+            const useApprovalWorkflow = this.shouldUseApprovalWorkflow();
+
+            if (useApprovalWorkflow && window.approvalWorkflowManager) {
+                this.showApprovalWorkflowResults();
+            } else {
+                this.showTraditionalResults();
+            }
         }
     }
 
@@ -108,6 +113,182 @@ class CrossReferenceManager {
         // Use approval workflow if there are suggested updates
         return this.currentAnalysis.suggested_updates &&
                this.currentAnalysis.suggested_updates.length > 0;
+    }
+
+    showSimplifiedResults() {
+        // For simplified cross-reference system, redirect to detection UI
+        const novelId = this.currentAnalysis.novel_id;
+        const sourceEntity = this.currentAnalysis.source_entity;
+
+        if (this.currentAnalysis.detected_entities && this.currentAnalysis.detected_entities.length > 0) {
+            // Show results in a modal
+            this.showSimplifiedModal();
+        } else {
+            // No entities detected
+            this.showInfo('No new entities detected in this content.');
+        }
+    }
+
+    showSimplifiedModal() {
+        const modal = this.createSimplifiedModal();
+        document.body.appendChild(modal);
+
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+
+        // Clean up modal when hidden
+        modal.addEventListener('hidden.bs.modal', () => {
+            document.body.removeChild(modal);
+        });
+    }
+
+    createSimplifiedModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'simplifiedCrossReferenceModal';
+        modal.tabIndex = -1;
+
+        const detectedEntities = this.currentAnalysis.detected_entities || [];
+        const novelId = this.currentAnalysis.novel_id;
+
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-search-plus me-2"></i>New Entities Detected
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">
+                            Found ${detectedEntities.length} potential new entities that could be added to your worldbuilding database.
+                        </p>
+
+                        <div class="mb-3">
+                            <button class="btn btn-success btn-sm" id="createAllBtn">Create All</button>
+                            <button class="btn btn-outline-secondary btn-sm" id="selectAllBtn">Select All</button>
+                            <button class="btn btn-outline-secondary btn-sm" id="selectNoneBtn">Select None</button>
+                        </div>
+
+                        <div id="entitiesList">
+                            ${this.renderEntityList(detectedEntities)}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="createSelectedBtn">Create Selected</button>
+                        <a href="/novel/${novelId}/cross-reference/detection-ui" class="btn btn-outline-primary" target="_blank">
+                            Open Full Detection UI
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add event listeners
+        this.addSimplifiedModalEventListeners(modal);
+
+        return modal;
+    }
+
+    renderEntityList(entities) {
+        return entities.map((entity, index) => `
+            <div class="card mb-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="form-check">
+                            <input class="form-check-input entity-checkbox" type="checkbox"
+                                   id="entity-${index}" data-index="${index}">
+                            <label class="form-check-label fw-bold" for="entity-${index}">
+                                ${entity.name}
+                            </label>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary">${entity.type}</span>
+                            <span class="badge bg-secondary">${entity.confidence_label}</span>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-1">
+                        <strong>Context:</strong> "${entity.context}"
+                    </p>
+                    <small class="text-muted">
+                        Confidence: ${Math.round(entity.confidence * 100)}%
+                    </small>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    addSimplifiedModalEventListeners(modal) {
+        const selectAllBtn = modal.querySelector('#selectAllBtn');
+        const selectNoneBtn = modal.querySelector('#selectNoneBtn');
+        const createAllBtn = modal.querySelector('#createAllBtn');
+        const createSelectedBtn = modal.querySelector('#createSelectedBtn');
+
+        selectAllBtn?.addEventListener('click', () => {
+            modal.querySelectorAll('.entity-checkbox').forEach(cb => cb.checked = true);
+        });
+
+        selectNoneBtn?.addEventListener('click', () => {
+            modal.querySelectorAll('.entity-checkbox').forEach(cb => cb.checked = false);
+        });
+
+        createAllBtn?.addEventListener('click', () => {
+            modal.querySelectorAll('.entity-checkbox').forEach(cb => cb.checked = true);
+            this.createSelectedEntities(modal);
+        });
+
+        createSelectedBtn?.addEventListener('click', () => {
+            this.createSelectedEntities(modal);
+        });
+    }
+
+    async createSelectedEntities(modal) {
+        const checkboxes = modal.querySelectorAll('.entity-checkbox:checked');
+        const selectedEntities = Array.from(checkboxes).map(cb => {
+            const index = parseInt(cb.dataset.index);
+            return this.currentAnalysis.detected_entities[index];
+        });
+
+        if (selectedEntities.length === 0) {
+            this.showError('Please select at least one entity to create.');
+            return;
+        }
+
+        try {
+            const novelId = this.currentAnalysis.novel_id;
+            const response = await fetch(`/novel/${novelId}/cross-reference/create-entities`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    selected_entities: selectedEntities
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showSuccess(`Successfully created ${result.total_created} entities!`);
+
+                // Close modal
+                const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                bootstrapModal.hide();
+
+                // Optionally refresh the page or update UI
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                this.showError(result.error || 'Failed to create entities');
+            }
+
+        } catch (error) {
+            console.error('Entity creation error:', error);
+            this.showError('Failed to create entities. Please try again.');
+        }
     }
 
     showApprovalWorkflowResults() {
