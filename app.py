@@ -34,6 +34,19 @@ location_editor = LocationEditorAgent()
 # Register blueprints
 app.register_blueprint(simple_cross_reference_bp)
 
+# Helper function for cache invalidation
+def _invalidate_cross_reference_cache(novel_id: str) -> None:
+    """Invalidate cross-reference cache when entity content changes."""
+    try:
+        from utils.cross_reference_cache import get_cache_manager
+
+        cache_manager = get_cache_manager()
+        invalidated = cache_manager.invalidate(pattern=novel_id)
+        logger.info(f"Invalidated {invalidated} cross-reference cache entries for novel {novel_id}")
+
+    except Exception as e:
+        logger.warning(f"Failed to invalidate cross-reference cache for novel {novel_id}: {e}")
+
 # Test route for cross-reference functionality
 @app.route('/test-cross-reference')
 def test_cross_reference():
@@ -238,6 +251,9 @@ def novel_edit_character(novel_id, character_id):
             # Save tags update
             world_state.add_or_update('characters', character_id, character)
 
+            # Invalidate cross-reference cache since content changed
+            _invalidate_cross_reference_cache(novel_id)
+
         # Handle AI editing if requested
         if edit_request:
             try:
@@ -269,6 +285,9 @@ def novel_edit_character(novel_id, character_id):
                 success = world_state.add_or_update('characters', character_id, updated_character)
 
                 if success:
+                    # Invalidate cross-reference cache for this novel since content changed
+                    _invalidate_cross_reference_cache(novel_id)
+
                     if updated_character.get('ai_edited'):
                         flash(f'Character "{character.get("name")}" updated successfully using AI!', 'success')
                     else:
@@ -556,6 +575,9 @@ def novel_edit_location(novel_id, location_id):
             # Save tags update
             world_state.add_or_update('locations', location_id, location)
 
+            # Invalidate cross-reference cache since content changed
+            _invalidate_cross_reference_cache(novel_id)
+
         # Handle AI editing if requested
         if edit_request:
             try:
@@ -587,6 +609,9 @@ def novel_edit_location(novel_id, location_id):
                 success = world_state.add_or_update('locations', location_id, updated_location)
 
                 if success:
+                    # Invalidate cross-reference cache for this novel since content changed
+                    _invalidate_cross_reference_cache(novel_id)
+
                     if updated_location.get('ai_edited'):
                         flash(f'Location "{location.get("name")}" updated successfully using AI!', 'success')
                     else:
@@ -732,6 +757,9 @@ def novel_edit_lore(novel_id, lore_id):
             # Save tags update
             world_state.add_or_update('lore', lore_id, lore_entry)
 
+            # Invalidate cross-reference cache since content changed
+            _invalidate_cross_reference_cache(novel_id)
+
         # Handle AI editing if requested
         if edit_request:
             try:
@@ -756,6 +784,9 @@ def novel_edit_lore(novel_id, lore_id):
                 success = world_state.add_or_update('lore', lore_id, updated_lore)
 
                 if success:
+                    # Invalidate cross-reference cache for this novel since content changed
+                    _invalidate_cross_reference_cache(novel_id)
+
                     if updated_lore.get('ai_edited'):
                         flash(f'Lore entry "{lore_entry.get("title")}" updated successfully using AI!', 'success')
                     else:
@@ -878,6 +909,9 @@ def novel_lore_edit_fast(novel_id, lore_id):
         success = world_state.add_or_update('lore', lore_id, updated_lore)
 
         if success:
+            # Invalidate cross-reference cache for this novel since content changed
+            _invalidate_cross_reference_cache(novel_id)
+
             return jsonify({
                 'success': True,
                 'message': 'Lore updated successfully!',
@@ -1104,6 +1138,9 @@ def novel_location_edit_fast(novel_id, location_id):
         success = world_state.add_or_update('locations', location_id, updated_location)
 
         if success:
+            # Invalidate cross-reference cache for this novel since content changed
+            _invalidate_cross_reference_cache(novel_id)
+
             return jsonify({
                 'success': True,
                 'message': 'Location updated successfully!',
