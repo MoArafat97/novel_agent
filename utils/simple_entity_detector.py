@@ -78,7 +78,10 @@ class SimpleEntityDetector:
             'This', 'That', 'These', 'Those', 'Here', 'There', 'Where', 'When', 'Why', 'How',
             'What', 'Who', 'Which', 'Whose', 'Whom', 'All', 'Any', 'Some', 'Many', 'Much',
             'Character', 'Protagonist', 'Story', 'Main', 'During', 'Their', 'Adventures',
-            'Together', 'Later', 'Both', 'Under', 'Wise', 'Ancient', 'Legendary'
+            'Together', 'Later', 'Both', 'Under', 'Wise', 'Ancient', 'Legendary',
+            # Pronouns and common false positives
+            'He', 'She', 'It', 'They', 'We', 'You', 'I', 'Me', 'Him', 'Her', 'Us', 'Them',
+            'His', 'Hers', 'Its', 'Our', 'Your', 'My', 'Mine', 'Yours', 'Theirs'
         }
         
         for match in re.finditer(pattern, content):
