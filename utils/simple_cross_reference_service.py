@@ -104,17 +104,35 @@ class SimpleCrossReferenceService:
                     'created_by': 'cross_reference_detection',
                     'detection_confidence': entity.get('confidence', 0.5)
                 })
-                
+
+                logger.info(f"Creating {entity['type']} '{entity['name']}' with data: {list(entity_data.keys())}")
+
                 # Create the entity in the database
                 success = self.world_state.add_or_update(entity['type'], entity_id, entity_data)
-                
+
                 if success:
-                    created_entities.append({
-                        'name': entity['name'],
-                        'type': entity['type'],
-                        'id': entity_id
-                    })
+                    # Verify the entity was actually created
+                    verification = self.world_state.get(entity['type'], entity_id)
+                    if verification:
+                        logger.info(f"Successfully created and verified {entity['type']} '{entity['name']}' with ID {entity_id}")
+                        created_entities.append({
+                            'name': entity['name'],
+                            'type': entity['type'],
+                            'id': entity_id
+                        })
+
+                        # Invalidate cache for this novel to ensure new entities appear
+                        self._invalidate_novel_cache(novel_id)
+                    else:
+                        logger.error(f"Entity {entity['type']} '{entity['name']}' was reported as created but verification failed")
+                        failed_entities.append({
+                            'name': entity['name'],
+                            'type': entity['type'],
+                            'error': 'Entity creation verification failed'
+                        })
+
                 else:
+                    logger.error(f"Failed to create {entity['type']} '{entity['name']}' in database")
                     failed_entities.append({
                         'name': entity['name'],
                         'type': entity['type'],
@@ -129,13 +147,16 @@ class SimpleCrossReferenceService:
                     'error': str(e)
                 })
         
-        return {
+        result = {
             'success': len(failed_entities) == 0,
             'created_entities': created_entities,
             'failed_entities': failed_entities,
             'total_created': len(created_entities),
             'total_failed': len(failed_entities)
         }
+
+        logger.info(f"Entity creation completed: {len(created_entities)} created, {len(failed_entities)} failed")
+        return result
     
     def _extract_entity_content(self, entity_data: Dict[str, Any], entity_type: str) -> str:
         """Extract all relevant text content from an entity."""
@@ -221,3 +242,22 @@ class SimpleCrossReferenceService:
             'error': error,
             'message': f"Analysis failed: {error}"
         }
+
+    def _invalidate_novel_cache(self, novel_id: str) -> None:
+        """Invalidate cache entries related to a specific novel."""
+        try:
+            # Import cache manager here to avoid circular imports
+            from utils.cross_reference_cache import get_cache_manager
+
+            cache_manager = get_cache_manager()
+
+            # Invalidate cache entries for this novel
+            invalidated = cache_manager.invalidate(pattern=novel_id)
+            logger.info(f"Invalidated {invalidated} cache entries for novel {novel_id}")
+
+            # Also invalidate any world state cache if it exists
+            if hasattr(self.world_state, '_cache_invalidate'):
+                self.world_state._cache_invalidate(f"novel_{novel_id}")
+
+        except Exception as e:
+            logger.warning(f"Failed to invalidate cache for novel {novel_id}: {e}")
