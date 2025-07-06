@@ -390,18 +390,42 @@
         function showCreationResults(result) {
             const createdList = document.getElementById('createdEntitiesList');
             createdList.innerHTML = '';
-            
+
             result.created_entities.forEach(entity => {
                 const item = document.createElement('div');
                 item.innerHTML = `
-                    <strong>${entity.name}</strong> (${entity.type}) - 
+                    <strong>${entity.name}</strong> (${entity.type}) -
                     <a href="/novel/${novelId}/worldbuilding/${entity.type}/${entity.id}" target="_blank">View</a>
                 `;
                 createdList.appendChild(item);
             });
-            
+
+            // Add navigation buttons
+            const navigationDiv = document.createElement('div');
+            navigationDiv.className = 'mt-3';
+            navigationDiv.innerHTML = `
+                <div class="btn-group w-100">
+                    <a href="/novel/${novelId}/worldbuilding/characters" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-1"></i>View Characters
+                    </a>
+                    <a href="/novel/${novelId}/worldbuilding/locations" class="btn btn-outline-success">
+                        <i class="fas fa-map-marker-alt me-1"></i>View Locations
+                    </a>
+                    <a href="/novel/${novelId}/worldbuilding/lore" class="btn btn-outline-info">
+                        <i class="fas fa-book me-1"></i>View Lore
+                    </a>
+                </div>
+                <div class="text-center mt-2">
+                    <small class="text-muted">New entities have been created! Click above to view them in their respective sections.</small>
+                </div>
+            `;
+            createdList.appendChild(navigationDiv);
+
             document.getElementById('creationResults').style.display = 'block';
             document.querySelector('.detection-results').style.display = 'none';
+
+            // Log for debugging
+            console.log('Entities created successfully:', result);
         }
     </script>
 </body>
