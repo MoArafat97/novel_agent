@@ -46,8 +46,8 @@ class SimpleEntityDetector:
             # Step 2: Get existing entities for this novel
             existing_entities = self._get_existing_entities(novel_id)
             
-            # Step 3: Filter out entities that already exist
-            new_entities = self._filter_new_entities(potential_entities, existing_entities)
+            # Step 3: Filter out entities that already exist and exclude current entity
+            new_entities = self._filter_new_entities(potential_entities, existing_entities, source_entity_type, source_entity_id)
             
             if not new_entities:
                 return []
@@ -132,28 +132,49 @@ class SimpleEntityDetector:
             
         return existing
     
-    def _filter_new_entities(self, potential_entities: List[Dict[str, Any]], existing_entities: Dict[str, List[str]]) -> List[Dict[str, Any]]:
-        """Filter out entities that already exist in the database."""
+    def _filter_new_entities(self, potential_entities: List[Dict[str, Any]], existing_entities: Dict[str, List[str]],
+                           source_entity_type: str = None, source_entity_id: str = None) -> List[Dict[str, Any]]:
+        """Filter out entities that already exist in the database and exclude the current entity being analyzed."""
         new_entities = []
-        
+
         # Create a set of all existing entity names (lowercase for comparison)
         all_existing = set()
         for entity_list in existing_entities.values():
             all_existing.update(entity_list)
-        
+
+        # Get the current entity name to exclude it from suggestions
+        current_entity_name = None
+        if source_entity_type and source_entity_id and self.world_state:
+            try:
+                current_entity_data = self.world_state.get(source_entity_type, source_entity_id)
+                if current_entity_data:
+                    current_entity_name = (current_entity_data.get('name') or
+                                         current_entity_data.get('title', '')).lower()
+                    logger.info(f"Excluding current entity '{current_entity_name}' from cross-reference suggestions")
+            except Exception as e:
+                logger.warning(f"Could not get current entity name for exclusion: {e}")
+
         for entity in potential_entities:
             name_lower = entity['name'].lower()
-            
-            # Skip if entity already exists
+
+            # Skip if entity already exists in database
             if name_lower in all_existing:
+                logger.debug(f"Skipping existing entity: {entity['name']}")
                 continue
-                
+
+            # Skip if this is the current entity being analyzed
+            if current_entity_name and name_lower == current_entity_name:
+                logger.info(f"Skipping current entity from suggestions: {entity['name']}")
+                continue
+
             # Skip duplicates within this detection
             if any(e['name'].lower() == name_lower for e in new_entities):
+                logger.debug(f"Skipping duplicate entity: {entity['name']}")
                 continue
-                
+
             new_entities.append(entity)
-        
+
+        logger.info(f"Filtered {len(potential_entities)} potential entities down to {len(new_entities)} new entities")
         return new_entities
     
     def _classify_entities(self, entities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -183,12 +204,15 @@ class SimpleEntityDetector:
         
         return classified
     
-    def _format_detection_results(self, entities: List[Dict[str, Any]], novel_id: str, 
+    def _format_detection_results(self, entities: List[Dict[str, Any]], novel_id: str,
                                 source_entity_type: str = None, source_entity_id: str = None) -> List[Dict[str, Any]]:
         """Format detection results for the user interface."""
         results = []
-        
+
         for entity in entities:
+            # Create suggested fields based on entity type
+            suggested_fields = self._generate_suggested_fields(entity['name'], entity['entity_type'])
+
             # Create a clean, user-friendly result
             result = {
                 'name': entity['name'],
@@ -198,9 +222,9 @@ class SimpleEntityDetector:
                 'context': entity['context'],
                 'evidence': f"Mentioned in content: \"{entity['context']}\"",
                 'novel_id': novel_id,
+                'suggested_fields': suggested_fields,  # Add this for entity creation
                 'source_entity_type': source_entity_type,
-                'source_entity_id': source_entity_id,
-                'suggested_fields': self._generate_suggested_fields(entity['name'], entity['entity_type'])
+                'source_entity_id': source_entity_id
             }
             results.append(result)
         
@@ -220,26 +244,35 @@ class SimpleEntityDetector:
         base_fields = {
             'name': name,
             'description': f"Auto-detected {entity_type[:-1]} from content analysis",
-            'tags': []
+            'tags': [],
+            'created_by': 'cross_reference_detection'
         }
-        
+
         if entity_type == 'characters':
             base_fields.update({
                 'personality': '',
                 'backstory': '',
-                'occupation': ''
+                'background': '',
+                'occupation': '',
+                'appearance': '',
+                'relationships': []
             })
         elif entity_type == 'locations':
             base_fields.update({
                 'geography': '',
+                'climate': '',
                 'culture': '',
-                'notable_features': ''
+                'history': '',
+                'notable_features': '',
+                'inhabitants': []
             })
         elif entity_type == 'lore':
             base_fields.update({
+                'title': name,
                 'details': '',
                 'significance': '',
-                'related_events': ''
+                'related_events': '',
+                'category': 'general'
             })
-        
+
         return base_fields
