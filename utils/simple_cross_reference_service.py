@@ -34,16 +34,24 @@ class SimpleCrossReferenceService:
             Dictionary with detected new entities and metadata
         """
         try:
+            entity_name = entity_data.get('name') or entity_data.get('title', 'Unknown')
+            logger.info(f"Analyzing {entity_type} '{entity_name}' (ID: {entity_id}) for new entities in novel {novel_id}")
+
             # Extract all text content from the entity
             content = self._extract_entity_content(entity_data, entity_type)
-            
+
             if not content or len(content.strip()) < 10:
+                logger.warning(f"No content to analyze for {entity_type} '{entity_name}'")
                 return self._create_empty_result(entity_type, entity_id, novel_id, "No content to analyze")
-            
-            # Detect new entities
+
+            logger.info(f"Extracted {len(content)} characters of content for analysis")
+
+            # Detect new entities (excluding the current entity)
             detected_entities = self.entity_detector.detect_new_entities(
                 content, novel_id, entity_type, entity_id
             )
+
+            logger.info(f"Detected {len(detected_entities)} new entities for {entity_type} '{entity_name}'")
             
             # Create result
             entity_name = entity_data.get('name') or entity_data.get('title', 'Unknown')

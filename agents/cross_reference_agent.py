@@ -118,7 +118,8 @@ class CrossReferenceAgent:
         
         try:
             entity_name = entity_data.get('name') or entity_data.get('title', 'Unknown')
-            logger.info(f"Starting cross-reference analysis for {entity_type} '{entity_name}'")
+            logger.info(f"Starting cross-reference analysis for {entity_type} '{entity_name}' (ID: {entity_id}) in novel {novel_id}")
+            logger.info(f"Current entity will be excluded from cross-reference suggestions")
 
             # Phase 2: Use Multi-Agent System if available
             if self.use_multi_agent and self.multi_agent_coordinator and self.multi_agent_coordinator.is_available():

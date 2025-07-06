@@ -118,11 +118,32 @@
     <script>
         const novelId = '{{ novel_id }}';
         let detectedEntities = [];
-        
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            loadEntityTypes();
-            setupEventListeners();
+            try {
+                loadEntityTypes();
+                setupEventListeners();
+
+                // Check if we have initial parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const entityType = urlParams.get('entity_type') || '{{ entity_type or "" }}';
+                const entityId = urlParams.get('entity_id') || '{{ entity_id or "" }}';
+
+                if (entityType && entityId) {
+                    // Pre-select the entity type and entity
+                    document.getElementById('entityType').value = entityType;
+                    loadEntities().then(() => {
+                        const entitySelect = document.getElementById('entityId');
+                        if (entitySelect) {
+                            entitySelect.value = entityId;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to initialize page:', error);
+                alert('Failed to initialize the detection page. Please refresh and try again.');
+            }
         });
         
         function setupEventListeners() {
@@ -140,42 +161,55 @@
         
         async function loadEntities() {
             const entityType = document.getElementById('entityType').value;
-            const entitySelect = document.getElementById('entitySelect');
+            const entitySelect = document.getElementById('entityId');  // Fixed element ID
             const analyzeBtn = document.getElementById('analyzeBtn');
-            
+
             if (!entityType) {
-                entitySelect.disabled = true;
+                if (entitySelect) {
+                    entitySelect.disabled = true;
+                }
                 analyzeBtn.disabled = true;
                 return;
             }
-            
+
             try {
                 const response = await fetch(`/api/novel/${novelId}/worldbuilding/${entityType}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const entities = await response.json();
-                
-                entitySelect.innerHTML = '<option value="">Select an entity...</option>';
-                entities.forEach(entity => {
-                    const option = document.createElement('option');
-                    option.value = entity.id;
-                    option.textContent = entity.name || entity.title || 'Unnamed';
-                    entitySelect.appendChild(option);
-                });
-                
-                entitySelect.disabled = false;
-                entitySelect.addEventListener('change', function() {
-                    analyzeBtn.disabled = !this.value;
-                });
-                
+
+                if (entitySelect) {
+                    entitySelect.innerHTML = '<option value="">Select an entity...</option>';
+                    entities.forEach(entity => {
+                        const option = document.createElement('option');
+                        option.value = entity.id;
+                        option.textContent = entity.name || entity.title || 'Unnamed';
+                        entitySelect.appendChild(option);
+                    });
+
+                    entitySelect.disabled = false;
+                    entitySelect.addEventListener('change', function() {
+                        analyzeBtn.disabled = !this.value;
+                    });
+                }
+
             } catch (error) {
                 console.error('Failed to load entities:', error);
-                alert('Failed to load entities. Please try again.');
+                alert('Failed to load entities. Please check your connection and try again.');
+                if (entitySelect) {
+                    entitySelect.disabled = true;
+                }
+                analyzeBtn.disabled = true;
             }
         }
         
         async function analyzeContent() {
             const entityType = document.getElementById('entityType').value;
-            const entityId = document.getElementById('entitySelect').value;
-            
+            const entityId = document.getElementById('entityId').value;  // Fixed element ID
+
             if (!entityType || !entityId) {
                 alert('Please select both entity type and entity.');
                 return;
@@ -197,19 +231,33 @@
                         entity_id: entityId
                     })
                 });
-                
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     detectedEntities = result.detected_entities || [];
                     displayResults(detectedEntities);
+
+                    // Log analysis details for debugging
+                    console.log(`Analysis completed for ${entityType} ${entityId}:`, {
+                        total_detected: result.total_detected,
+                        source_entity: result.source_entity,
+                        message: result.message
+                    });
                 } else {
+                    console.error('Analysis failed:', result);
                     alert('Analysis failed: ' + (result.error || 'Unknown error'));
+                    document.querySelector('.no-results').style.display = 'block';
                 }
-                
+
             } catch (error) {
                 console.error('Analysis failed:', error);
-                alert('Analysis failed. Please try again.');
+                alert('Analysis failed. Please check your connection and try again.');
+                document.querySelector('.no-results').style.display = 'block';
             } finally {
                 document.querySelector('.loading-spinner').style.display = 'none';
             }
@@ -293,7 +341,15 @@
                 return;
             }
             
+            // Disable the create button to prevent double-clicking
+            const createBtn = document.getElementById('createSelectedBtn');
+            const originalText = createBtn.textContent;
+            createBtn.disabled = true;
+            createBtn.textContent = 'Creating...';
+
             try {
+                console.log('Creating entities:', selectedEntities);
+
                 const response = await fetch(`/novel/${novelId}/cross-reference/create-entities`, {
                     method: 'POST',
                     headers: {
@@ -303,18 +359,31 @@
                         selected_entities: selectedEntities
                     })
                 });
-                
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showCreationResults(result);
+                    console.log('Entities created successfully:', result);
                 } else {
+                    console.error('Entity creation failed:', result);
                     alert('Entity creation failed: ' + (result.error || 'Unknown error'));
+                    if (result.failed_entities && result.failed_entities.length > 0) {
+                        console.error('Failed entities:', result.failed_entities);
+                    }
                 }
                 
             } catch (error) {
                 console.error('Entity creation failed:', error);
-                alert('Entity creation failed. Please try again.');
+                alert('Entity creation failed. Please check your connection and try again.');
+            } finally {
+                // Re-enable the create button
+                createBtn.disabled = false;
+                createBtn.textContent = originalText;
             }
         }
         
